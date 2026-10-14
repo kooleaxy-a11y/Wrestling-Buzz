@@ -1,5 +1,5 @@
 {
-  "nextId": 31,
+  "nextId": 35,
   "questions": [
     {
       "id": 1,
@@ -362,5 +362,30 @@
       "a": 3
     }
   ],
-  "news": []
+  "news": [
+    {
+      "id": 31,
+      "date": "2026-10-14T23:02:28.018Z",
+      "title": "WWE IS REAL",
+      "body": "WWE IS REAL"
+    },
+    {
+      "id": 32,
+      "date": "2026-10-14T23:32:54.201Z",
+      "title": "WWE IS REAL",
+      "body": "WWE IS REAL"
+    },
+    {
+      "id": 33,
+      "date": "2026-10-14T23:46:50.795Z",
+      "title": "WWE IS REAL",
+      "body": "WWE IS REAL"
+    },
+    {
+      "id": 34,
+      "date": "2026-10-14T23:48:39.038Z",
+      "title": "WWE IS REAL",
+      "body": "WWE IS REAL"
+    }
+  ]
 }
