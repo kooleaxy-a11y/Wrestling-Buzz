@@ -243,6 +243,83 @@ select:focus,input[type=password]:focus{border-color:var(--gold);outline:none}
 .nimg{display:block;width:100%;max-height:360px;object-fit:cover;border-radius:10px;margin-bottom:12px;background:var(--ring)}
 .thumb{display:block;width:96px;height:64px;object-fit:cover;border-radius:6px;margin-top:8px}
 .prev img{display:block;max-width:100%;max-height:220px;border-radius:10px;margin:10px 0 8px}
+
+input[type=datetime-local]{width:100%;background:var(--ring);border:2px solid var(--line);border-radius:10px;padding:12px 14px;font-size:18px;color:var(--rope)}
+input[type=datetime-local]:focus{border-color:var(--gold);outline:none}
+.chk{display:flex;align-items:flex-start;gap:10px;margin:8px 0;font-weight:500}
+.chk input{width:22px;height:22px;flex:none;margin-top:2px}
+.respanel{margin-top:12px;padding-top:6px;border-top:1px solid var(--line)}
+.respanel select{margin-top:2px}
+.ev h4{margin-bottom:4px}
+.pstat{color:var(--steel);font-size:15px;margin-bottom:4px}
+.pbadge{display:inline-block;border-radius:6px;padding:2px 10px;font-weight:700;font-size:14px;margin-right:6px}
+.pbadge.open{background:rgba(63,191,127,.18);color:var(--good)}
+.pbadge.lock{background:rgba(237,186,62,.16);color:var(--gold)}
+.pbadge.done{background:rgba(224,27,50,.18);color:#FF5468}
+.pq{font-weight:700;margin:16px 0 8px}
+.popts{display:flex;flex-wrap:wrap;gap:8px}
+.popt{background:var(--ring);border:2px solid var(--line);border-radius:10px;padding:10px 16px;font-weight:600;cursor:pointer;font-size:16px}
+.popt:hover:not(:disabled){border-color:var(--rope)}
+.popt:disabled{cursor:default}
+.popt.sel{border-color:var(--gold);background:rgba(237,186,62,.14)}
+.popt.right{border-color:var(--good);background:rgba(63,191,127,.18)}
+.popt.wrong{border-color:var(--crimson);background:rgba(224,27,50,.16)}
+.pnote{color:var(--steel);font-size:15px;margin-top:6px}
+.pnote.good{color:var(--good);font-weight:600}
+.pprog{color:var(--steel);font-size:15px;margin-top:14px}
+@media (max-width:560px){ nav a{font-size:14px} }
+[hidden]{display:none !important}
+.bigtag{display:inline-block;background:var(--gold);color:#241005;font-weight:700;border-radius:6px;padding:2px 10px;font-size:14px;margin:4px 0 6px}
+.ptimer{display:flex;align-items:baseline;justify-content:space-between;gap:12px;background:var(--ring);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:8px 0 4px}
+.plabel{color:var(--steel);font-weight:600}
+.pclock{font-family:var(--display);font-size:34px;letter-spacing:.04em;color:var(--gold);font-variant-numeric:tabular-nums}
+.pclock.urgent{color:var(--crimson);animation:blink 1s steps(2) infinite}
+.ptimer.closed .pclock{color:var(--steel)}
+@keyframes blink{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){ .pclock.urgent{animation:none} }
+.lockcard{text-align:center}
+.lockico{display:inline-block;font-family:var(--display);letter-spacing:.1em;border:2px solid var(--crimson);color:var(--crimson);border-radius:8px;padding:2px 14px;margin-bottom:10px}
+.lockcard h3{margin:6px 0 8px}
+.chatlist{height:55vh;min-height:300px;overflow-y:auto;background:var(--ring);border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px}
+.cempty{color:var(--steel);text-align:center;margin-top:20px}
+.cmsg{background:var(--canvas);border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:8px 0;max-width:88%}
+.cmsg.me{margin-left:auto;border-color:var(--crimson);background:#30121A}
+.chead{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.cname{font-weight:700}
+.clv{font-size:13px;color:var(--gold);font-weight:700}
+.ctime{font-size:13px;color:var(--steel);margin-left:auto}
+.cbody{margin-top:2px;overflow-wrap:anywhere;white-space:pre-wrap}
+.cact{display:flex;gap:8px;align-items:center;margin-top:6px}
+.cflag{font-size:13px;color:#FF5468}
+.chatform{margin-top:12px;display:grid;gap:8px}
+.chatrow{display:flex;gap:8px}
+.chatrow input{flex:1;min-width:0}
+.chatrow .btn{padding:10px 20px;min-height:0;font-size:20px}
+details.mod{margin-top:22px;border-top:1px solid var(--line);padding-top:12px;color:var(--steel)}
+details.mod summary{cursor:pointer;font-weight:600}
+@media (max-width:560px){ nav a{font-size:13px;padding:8px 2px} }
+.modecard{background:var(--ring);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:12px;display:grid;gap:8px}
+.modecard b{font-family:var(--display);font-weight:400;font-size:21px;letter-spacing:.03em}
+.modecard>span{color:var(--steel);font-size:15px}
+.modecard .btn{padding:10px 20px;min-height:0;font-size:19px}
+.mh{margin:26px 0 0 !important}
+.lockbox{background:var(--canvas);border:1px dashed var(--steel);border-radius:12px;padding:14px;text-align:center;display:grid;gap:6px;margin-top:8px}
+.lockbox b{font-family:var(--display);font-weight:400;font-size:20px;letter-spacing:.03em}
+.lockbox>span:not(.lockico){color:var(--steel);font-size:15px}
+.lockbox .lockico{justify-self:center}
+.insidercard h4{opacity:.85}
+.gcard em{display:block;font-style:normal;font-size:13px;margin-top:6px;color:var(--steel)}
+.gcard .xpbar{margin-top:8px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--gold);color:#241005;font-weight:700;padding:12px 18px;border-radius:12px;z-index:60;box-shadow:0 6px 24px rgba(0,0,0,.5);max-width:90vw;text-align:center;animation:up .4s ease-out}
+.spincard{text-align:center}
+.wheelwrap{position:relative;width:260px;height:260px;margin:8px auto 18px}
+.wheel{position:relative;width:100%;height:100%;border-radius:50%;border:4px solid var(--gold);
+  background:conic-gradient(var(--crimson) 0 60deg,#3A1520 60deg 120deg,var(--crimson) 120deg 180deg,#3A1520 180deg 240deg,var(--crimson) 240deg 300deg,#3A1520 300deg 360deg);
+  transition:transform 4.1s cubic-bezier(.12,.7,.15,1)}
+.wl{position:absolute;left:50%;top:50%;width:48px;margin:-12px 0 0 -24px;text-align:center;font-weight:800;font-size:17px}
+.wptr{position:absolute;left:50%;top:-10px;margin-left:-11px;z-index:2;border-left:11px solid transparent;border-right:11px solid transparent;border-top:22px solid var(--gold)}
+.spinres{margin-top:12px;font-weight:700;color:var(--gold)}
+@media (prefers-reduced-motion:reduce){ .wheel{transition:none} }
 </style>
 </head>
 <body>
@@ -252,7 +329,9 @@ select:focus,input[type=password]:focus{border-color:var(--gold);outline:none}
     <a class="logo" href="#quiz">WRESTLING <b>BUZZ</b></a>
     <nav aria-label="Main">
       <a href="#quiz" data-nav="quiz">Quiz</a>
+      <a href="#predict" data-nav="predict">Predict</a>
       <a href="#career" data-nav="career">Career</a>
+      <a href="#chat" data-nav="chat">Chat</a>
       <a href="#trending" data-nav="trending">Trending</a>
       <a href="#contact" data-nav="contact">Message</a>
     </nav>
@@ -299,13 +378,14 @@ select:focus,input[type=password]:focus{border-color:var(--gold);outline:none}
     <div class="row">
       <button class="btn" id="start" disabled>Enter the ring</button>
     </div>
+    <div id="modes"></div>
   </div>
 
   <!-- step 2: question -->
   <div id="q-play" class="panel" hidden>
     <div class="hud">
       <div class="who"><span id="who"></span><small id="who-g"></small></div>
-      <div class="meta">Question <b id="qn">1</b> of <span id="qt">10</span></div>
+      <div class="meta" id="hudmeta">Question <b id="qn">1</b> of <span id="qt">10</span></div>
     </div>
     <div class="timer" id="timer" aria-hidden="true"><i id="tbar"></i></div>
     <div class="secs" id="secs" aria-live="off">20</div>
@@ -337,6 +417,25 @@ select:focus,input[type=password]:focus{border-color:var(--gold);outline:none}
   </div>
 </section>
 
+<!-- ===================== PREDICT ===================== -->
+<section id="v-predict" class="view" aria-label="Predict the shows">
+  <h2>Predict the show</h2>
+  <p class="lead">Pick the winners before the bell rings. Correct picks earn XP, and a perfect card earns a big bonus.</p>
+  <div id="prednotes"></div>
+  <p class="snap" id="prednone" hidden>No shows to predict yet. Check back when the next card is announced.</p>
+  <div id="predlist"></div>
+  <div class="card">
+    <h4>How rewards work</h4>
+    <ul class="watch" style="margin-top:6px">
+      <li>+25 XP for every match you call correctly.</li>
+      <li>+15 XP for every bonus prediction you get right.</li>
+      <li>+50 XP extra for a perfect card.</li>
+      <li>Big events like Crown Jewel pay double XP.</li>
+    </ul>
+    <p class="why">Picks lock when the timer hits zero, at the start of the show. Results are released after the show.</p>
+  </div>
+</section>
+
 <!-- ===================== CAREER ===================== -->
 <section id="v-career" class="view" aria-label="Your career">
   <h2>Your career</h2>
@@ -349,15 +448,54 @@ select:focus,input[type=password]:focus{border-color:var(--gold);outline:none}
   <h3>Belts and badges</h3>
   <div class="bwrap" id="c-badges"></div>
 
+  <h3>Locked sections</h3>
+  <div class="gwrap" id="c-sections"></div>
+
+  <h3>Daily spin</h3>
+  <div id="c-spin"></div>
+
   <h3>How to earn XP</h3>
   <div class="card">
     <ul class="watch" style="margin-top:0">
       <li>+10 XP for every correct answer, plus up to +5 for answering fast.</li>
       <li>+20 XP for finishing a round, and +50 more for a perfect round.</li>
+      <li>Predictions: +25 XP per correct match pick, +15 per bonus pick, +50 for a perfect card.</li>
       <li>Daily bonus: finish a round on a new day for extra XP. Come back every day to grow your streak and the bonus.</li>
     </ul>
   </div>
   <div class="row"><a class="btn" href="#quiz">Back to the quiz</a></div>
+</section>
+
+<!-- ===================== CHAT ===================== -->
+<section id="v-chat" class="view" aria-label="Locker Room chat">
+  <h2>Locker Room</h2>
+  <p class="lead">Talk wrestling with other Wrestling Buzz fans.</p>
+  <div id="chat-note"></div>
+  <div class="panel lockcard" id="chat-locked" hidden></div>
+  <div class="panel" id="chat-off" hidden><p>The Locker Room isn't open yet. Check back soon.</p></div>
+  <div id="chat-main" hidden>
+    <p class="snap">Be respectful. No links, no bad language, no spam. Tap Report on anything that isn't right.</p>
+    <div class="chatlist" id="chat-list" role="log" aria-live="polite" tabindex="0"></div>
+    <form id="chat-form" class="chatform" novalidate>
+      <input id="chat-name" type="text" maxlength="24" placeholder="Your chat name" aria-label="Your chat name">
+      <div class="chatrow">
+        <input id="chat-input" type="text" maxlength="280" placeholder="Say something..." aria-label="Your message" autocomplete="off">
+        <button class="btn" id="chat-send" type="submit">Send</button>
+      </div>
+    </form>
+    <p class="msg" id="chat-status" role="status"></p>
+    <details class="mod">
+      <summary>Moderator sign in</summary>
+      <p class="hint" id="mod-state"></p>
+      <form id="mod-form" novalidate class="agrid" style="margin-top:10px">
+        <input id="mod-email" type="text" placeholder="Moderator email" autocomplete="username" aria-label="Moderator email">
+        <input id="mod-pw" type="password" placeholder="Password" autocomplete="current-password" aria-label="Password">
+        <div class="row" style="margin-top:0"><button class="btn" type="submit" style="padding:10px 20px;min-height:0;font-size:18px">Sign in</button></div>
+      </form>
+      <button class="btn ghost" id="mod-out" type="button" hidden style="padding:10px 20px;min-height:0;font-size:18px;margin-top:10px">Sign out</button>
+      <p class="msg" id="mod-msg" role="status"></p>
+    </details>
+  </div>
 </section>
 
 <!-- ===================== TRENDING ===================== -->
@@ -510,6 +648,7 @@ select:focus,input[type=password]:focus{border-color:var(--gold);outline:none}
       <form id="addn" novalidate class="agrid">
         <div><label class="f" for="an-t">Headline</label><input id="an-t" type="text" maxlength="120"></div>
         <div><label class="f" for="an-b">News</label><textarea id="an-b" maxlength="2000"></textarea></div>
+        <label class="chk"><input type="checkbox" id="an-ins"> Insiders only (readers need Level 3 to read it)</label>
         <div><label class="f" for="an-img">Picture (optional)</label>
           <input id="an-img" type="file" accept="image/*">
           <p class="hint">Photos are shrunk automatically so the site stays fast. One clear picture per post works best.</p>
@@ -518,6 +657,27 @@ select:focus,input[type=password]:focus{border-color:var(--gold);outline:none}
         <p class="msg" id="anmsg" role="status"></p>
       </form>
     </div>
+
+    <div class="panel apanel">
+      <h3 style="margin-top:0">Add a show to predict</h3>
+      <form id="adde" novalidate class="agrid">
+        <div><label class="f" for="ae-t">Show</label><input id="ae-t" type="text" maxlength="80" placeholder="e.g. Monday Night Raw, 20 Oct"></div>
+        <div><label class="f" for="ae-c">Picks close at</label><input id="ae-c" type="datetime-local"><p class="hint">Use the time the show starts. This uses the time zone of the phone you are on.</p></div>
+        <div><label class="f" for="ae-m">Matches (one per line)</label>
+          <textarea id="ae-m" placeholder="World Title: Roman Reigns vs LA Knight&#10;Liv Morgan vs Chelsea Green"></textarea>
+          <p class="hint">Write each match as A vs B (or A vs B vs C). You can put a title before a colon.</p></div>
+        <div><p class="f" style="font-weight:600;margin-bottom:4px">Bonus predictions</p><div id="ae-bonus"></div></div>
+        <div><label class="f" for="ae-x">Your own bonus questions (optional, one per line)</label>
+          <textarea id="ae-x" style="min-height:90px" placeholder="Who gets the biggest cheer? | Reigns | Knight | Neither"></textarea>
+          <p class="hint">Format: Question | Option 1 | Option 2 | ...</p></div>
+        <label class="chk"><input type="checkbox" id="ae-big"> Big event (Crown Jewel, WrestleMania and other premium events). Pays double XP.</label>
+        <div class="row" style="margin-top:4px"><button class="btn" type="submit">Add show</button></div>
+        <p class="msg" id="aemsg" role="status"></p>
+      </form>
+    </div>
+
+    <h3>Shows to predict (<span id="ecount">0</span>)</h3>
+    <div id="elist"></div>
 
     <div class="panel apanel">
       <h3 style="margin-top:0">Make your changes live</h3>
@@ -981,12 +1141,17 @@ var BADGES = [
   {id:"comeback",   name:"Comeback Kid",   desc:"Score 7 or more right in a round straight after a round under 5."},
   {id:"streak3",    name:"Three Count",    desc:"Play 3 days in a row."},
   {id:"streak7",    name:"Iron Man",       desc:"Play 7 days in a row."},
-  {id:"champ",      name:"Champion",       desc:"Reach Level 5."}
+  {id:"champ",      name:"Champion",       desc:"Reach Level 5."},
+  {id:"called_it",  name:"Called It",      desc:"Get a prediction right."},
+  {id:"fortune_teller", name:"Fortune Teller", desc:"Get every pick right on a show."},
+  {id:"oracle",     name:"Oracle",         desc:"Get 10 predictions right in total."},
+  {id:"survivor",   name:"Survivor",       desc:"Get 10 correct in one Survival mode run."},
+  {id:"lucky",      name:"Lucky Spin",     desc:"Win 100 XP on the daily spin."}
 ];
 var PROF_KEY = "wb_profile_v1";
 var rx = {ans:0, speed:0}, fastCorrect = 0, levelBefore = 1;
 
-function newProfile(){ return {xp:0, rounds:0, answered:0, correct:0, streak:0, bestStreak:0, lastPlay:"", lastPct:null, badges:{}}; }
+function newProfile(){ return {xp:0, rounds:0, answered:0, correct:0, streak:0, bestStreak:0, lastPlay:"", lastPct:null, badges:{}, pred:{}, unlocked:{}, hit7:false, survBest:0, lastSpin:""}; }
 function loadProfile(){
   var p = null, d = newProfile();
   try{ p = JSON.parse(store(PROF_KEY)||"null"); }catch(e){ p = null; }
@@ -996,6 +1161,16 @@ function loadProfile(){
     });
     if(typeof p.lastPlay==="string") d.lastPlay = p.lastPlay.slice(0,10);
     if(typeof p.lastPct==="number") d.lastPct = p.lastPct;
+    if(p.hit7===true) d.hit7 = true;
+    if(typeof p.survBest==="number" && p.survBest>=0) d.survBest = Math.floor(p.survBest);
+    if(typeof p.lastSpin==="string") d.lastSpin = p.lastSpin.slice(0,10);
+    if(p.unlocked && typeof p.unlocked==="object"){ Object.keys(p.unlocked).forEach(function(k){ if(typeof p.unlocked[k]==="string") d.unlocked[k] = p.unlocked[k].slice(0,10); }); }
+    if(p.pred && typeof p.pred==="object"){
+      Object.keys(p.pred).forEach(function(k){
+        var r = p.pred[k];
+        if(r && typeof r.xp==="number" && typeof r.correct==="number" && typeof r.total==="number") d.pred[k] = {xp:Math.max(0,Math.floor(r.xp)), correct:Math.max(0,Math.floor(r.correct)), total:Math.max(0,Math.floor(r.total)), perfect:!!r.perfect};
+      });
+    }
     if(p.badges && typeof p.badges==="object"){
       Object.keys(p.badges).forEach(function(k){ if(typeof p.badges[k]==="string") d.badges[k] = p.badges[k].slice(0,10); });
     }
@@ -1090,6 +1265,7 @@ function renderXpBox(total){
   Object.keys(byCat).forEach(function(k){ var c = byCat[k]; if(c.t>=3 && c.c===c.t) award("cat:"+k); });
   var after = levelFor(PROF.xp);
   if(after.n>=5) award("champ");
+  if(total>=5 && pctR>=0.7) PROF.hit7 = true;
   saveProfile();
 
   var rows = [["Correct answers", rx.ans]];
@@ -1113,11 +1289,13 @@ function renderXpBox(total){
     box.appendChild(el("div","unlock lvl","LEVEL UP! You are now Level "+after.n+": "+after.t));
     var gims = GIMMICKS.filter(function(g){ return g.lv>levelBefore && g.lv<=after.n; }).map(function(g){ return g.n; });
     if(gims.length) box.appendChild(el("div","unlock","New gimmick unlocked: "+gims.join(", ")));
+    if(chatConfigured() && levelBefore<CHAT_LEVEL && after.n>=CHAT_LEVEL) box.appendChild(el("div","unlock","New section unlocked: the Locker Room chat!"));
   }
   earned.forEach(function(id){
     var b = badgeInfo(id);
     box.appendChild(el("div","unlock bdg","New badge: "+b.name+". "+b.desc));
   });
+  checkUnlocks().forEach(function(l){ box.appendChild(el("div","unlock","New section unlocked: "+l.name)); });
 }
 
 /* career page */
@@ -1161,9 +1339,231 @@ function renderCareer(){
 }
 
 /* =====================================================================
+   LOCKED SECTIONS: padlock cards, unlock toasts, Category rounds, Survival mode, Daily spin, Insiders news, Big Event picks
+   ===================================================================== */
+var LOCKS = [
+  {id:"insiders", name:"Insiders-only news",   desc:"Read exclusive news posts.",
+   need:"Reach Level 3", test:function(){ return levelFor(PROF.xp).n>=3; }, pct:function(){ return Math.min(1, PROF.xp/LEVELS[2].xp); }},
+  {id:"category", name:"Category rounds",      desc:"Pick a category and play only those questions.",
+   need:"Reach Level 4", test:function(){ return levelFor(PROF.xp).n>=4; }, pct:function(){ return Math.min(1, PROF.xp/LEVELS[3].xp); }},
+  {id:"bigpicks", name:"Big Event predictions", desc:"Double XP predictions for premium events.",
+   need:"Reach Level 4", test:function(){ return levelFor(PROF.xp).n>=4; }, pct:function(){ return Math.min(1, PROF.xp/LEVELS[3].xp); }},
+  {id:"survival", name:"Survival mode",       desc:"3 lives. How long can you last?",
+   need:"Score 7 or more in a quiz round", test:function(){ return PROF.hit7===true; }, pct:function(){ return PROF.hit7 ? 1 : 0; }},
+  {id:"spin",     name:"Daily spin",          desc:"Spin the wheel once a day for bonus XP.",
+   need:"Play 3 days in a row", test:function(){ return PROF.bestStreak>=3; }, pct:function(){ return Math.min(1, liveStreak()/3); }}
+];
+function lockById(id){ return LOCKS.filter(function(l){ return l.id===id; })[0]; }
+function isUnlocked(id){ var l = lockById(id); return !!l && l.test(); }
+
+function lockCard(id){
+  var l = lockById(id), c = el("div","lockbox");
+  c.appendChild(el("span","lockico","LOCKED"));
+  c.appendChild(el("b","",l.name));
+  c.appendChild(el("span","",l.need));
+  c.appendChild(xpBar(l.pct()));
+  return c;
+}
+
+/* newly opened sections */
+function checkUnlocks(){
+  var opened = [];
+  LOCKS.forEach(function(l){ if(!PROF.unlocked[l.id] && l.test()){ PROF.unlocked[l.id] = todayStr(); opened.push(l); } });
+  if(opened.length) saveProfile();
+  return opened;
+}
+function toast(text){
+  var t = el("div","toast",text); t.setAttribute("role","status");
+  document.body.appendChild(t);
+  setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 5500);
+}
+function announceUnlocks(){
+  var o = checkUnlocks();
+  if(o.length) toast("UNLOCKED: "+o.map(function(l){ return l.name; }).join(", "));
+}
+
+/* locked sections list on the Career page */
+function renderSections(){
+  var g = $("c-sections"); g.innerHTML = "";
+  LOCKS.forEach(function(l){
+    var open = l.test();
+    var c = el("div","gcard"+(open?"":" locked"));
+    c.appendChild(el("b","",l.name));
+    c.appendChild(el("span","", l.desc));
+    c.appendChild(el("em","", open ? "Unlocked" : l.need));
+    if(!open) c.appendChild(xpBar(l.pct()));
+    g.appendChild(c);
+  });
+  if(chatConfigured()){
+    var open2 = chatUnlocked(), cc = el("div","gcard"+(open2?"":" locked"));
+    cc.appendChild(el("b","","Locker Room chat")); cc.appendChild(el("span","","Chat with other fans."));
+    cc.appendChild(el("em","", open2 ? "Unlocked" : "Reach Level "+CHAT_LEVEL));
+    g.appendChild(cc);
+  }
+  renderSpin();
+}
+
+/* ---------------- game modes on the quiz start screen ---------------- */
+var mode = "classic", lives = 3, survCorrect = 0;
+
+function commitPlayer(){
+  player.name = $("nm").value.trim();
+  store(NAME_KEY, player.name); store(GIM_KEY, player.gim);
+}
+function updateMeta(){
+  var m = $("hudmeta");
+  if(mode==="survival"){ m.innerHTML = "Lives <b>"+lives+"</b>   Correct <b>"+survCorrect+"</b>"; }
+  else { m.innerHTML = 'Question <b id="qn">'+(idx+1)+'</b> of <span id="qt">'+round.length+'</span>'; }
+}
+
+function renderModes(){
+  var box = $("modes"); box.innerHTML = "";
+  box.appendChild(el("h3","mh","More ways to play"));
+
+  var c1 = el("div","modecard");
+  c1.appendChild(el("b","","Category rounds"));
+  if(!isUnlocked("category")){ c1.appendChild(lockCard("category")); }
+  else {
+    var cats = {}; unseen().forEach(function(q){ cats[q.cat] = (cats[q.cat]||0)+1; });
+    var keys = Object.keys(cats).sort();
+    c1.appendChild(el("span","","Pick a category and play only those questions."));
+    if(!keys.length){ c1.appendChild(el("span","hint","You've answered every question we have.")); }
+    else {
+      var sel = document.createElement("select"); sel.id = "mode-cat"; sel.setAttribute("aria-label","Category");
+      keys.forEach(function(k){ var o = el("option","",k+" ("+cats[k]+" left)"); o.value = k; sel.appendChild(o); });
+      c1.appendChild(sel);
+      var go = el("button","btn ghost","Play category round"); go.type = "button"; go.id = "mode-cat-go";
+      go.addEventListener("click", function(){ commitPlayer(); startRound({cat:sel.value}); });
+      c1.appendChild(go);
+    }
+  }
+  box.appendChild(c1);
+
+  var c2 = el("div","modecard");
+  c2.appendChild(el("b","","Survival mode"));
+  if(!isUnlocked("survival")){ c2.appendChild(lockCard("survival")); }
+  else {
+    c2.appendChild(el("span","","3 lives. Keep answering until you run out. Your best run: "+PROF.survBest+"."));
+    var go2 = el("button","btn ghost","Start survival"); go2.type = "button"; go2.id = "mode-surv-go";
+    go2.addEventListener("click", function(){ commitPlayer(); startRound({mode:"survival"}); });
+    c2.appendChild(go2);
+  }
+  box.appendChild(c2);
+}
+
+function applyDaily(){
+  var today = todayStr(), dailyXp = 0;
+  if(PROF.lastPlay!==today){
+    PROF.streak = (PROF.lastPlay===yesterdayStr()) ? PROF.streak+1 : 1;
+    PROF.lastPlay = today;
+    if(PROF.streak>PROF.bestStreak) PROF.bestStreak = PROF.streak;
+    dailyXp = dailyBonusFor(PROF.streak);
+  }
+  return dailyXp;
+}
+
+function finishSurvival(){
+  stopTimer();
+  var n = survCorrect, dailyXp = applyDaily(), finishXp = 10, bonusXp = n>=10 ? 30 : 0;
+  PROF.xp += finishXp + bonusXp + dailyXp; PROF.rounds++;
+  var isBest = n>PROF.survBest; if(isBest) PROF.survBest = n;
+  var earned = [];
+  function aw(id){ if(giveBadge(id)) earned.push(id); }
+  aw("first_bell"); if(PROF.rounds>=3) aw("hat_trick"); if(n>=10) aw("survivor");
+  if(PROF.streak>=3) aw("streak3"); if(PROF.streak>=7) aw("streak7");
+  var after = levelFor(PROF.xp); if(after.n>=5) aw("champ");
+  saveProfile();
+
+  $("q-play").hidden = true; $("q-end").hidden = false;
+  $("end-who").textContent = ringName()+" | Survival mode";
+  $("sc").textContent = n; $("st").parentNode.hidden = true;
+  var tier = n>=20 ? ["Unbreakable","Twenty or more and still standing. Legendary."]
+           : n>=10 ? ["Last Man Standing","Ten or more. The ref has rarely seen toughness like that."]
+           : n>=5  ? ["Survivor","You lasted. Now push for ten."]
+                   : ["Down early","Rough run. The ref says try again."];
+  $("rank").textContent = tier[0];
+  $("endref").className = "ref " + (n>=5 ? "good":"bad");
+  $("endref").innerHTML = REF_SVG + '<p><span id="endtxt"></span><small>Referee\'s verdict</small></p>';
+  $("endtxt").textContent = tier[1];
+  $("verdict").innerHTML = "";
+  if(isBest && n>0){ var v = el("div","v s"); v.appendChild(el("b","","New personal best")); v.appendChild(el("span","","Your longest run so far: "+n+".")); $("verdict").appendChild(v); }
+
+  var box = $("xpbox"); box.innerHTML = "";
+  var rows = [["Correct answers", rx.ans]];
+  if(rx.speed>0) rows.push(["Speed bonus", rx.speed]);
+  rows.push(["Run complete", finishXp]);
+  if(bonusXp>0) rows.push(["10 correct bonus", bonusXp]);
+  if(dailyXp>0) rows.push(["Daily bonus ("+PROF.streak+"-day streak)", dailyXp]);
+  var totalXp = rx.ans + rx.speed + finishXp + bonusXp + dailyXp;
+  box.appendChild(el("h3","xph","XP earned"));
+  var list = el("div","xprows");
+  rows.forEach(function(r){ var d = el("div","xprow"); d.appendChild(el("span","",r[0])); d.appendChild(el("b","","+"+r[1])); list.appendChild(d); });
+  var tot = el("div","xprow total"); tot.appendChild(el("span","","Total")); tot.appendChild(el("b","","+"+totalXp+" XP")); list.appendChild(tot);
+  box.appendChild(list);
+  var N = nextLevel(after);
+  box.appendChild(el("p","xplvl","Level "+after.n+": "+after.t+(N ? "   |   "+(N.xp-PROF.xp)+" XP to Level "+N.n : "   |   Top level")));
+  box.appendChild(xpBar(levelPct()));
+  if(after.n>levelBefore){
+    box.appendChild(el("div","unlock lvl","LEVEL UP! You are now Level "+after.n+": "+after.t));
+    var gims = GIMMICKS.filter(function(g){ return g.lv>levelBefore && g.lv<=after.n; }).map(function(g){ return g.n; });
+    if(gims.length) box.appendChild(el("div","unlock","New gimmick unlocked: "+gims.join(", ")));
+  }
+  earned.forEach(function(id){ var b = badgeInfo(id); box.appendChild(el("div","unlock bdg","New badge: "+b.name+". "+b.desc)); });
+  checkUnlocks().forEach(function(l){ box.appendChild(el("div","unlock","New section unlocked: "+l.name)); });
+
+  var left = unseen().length;
+  $("again").hidden = left===0;
+  $("left-note").textContent = left===0 ? "That was every question we have. New ones are on the way." : left+" new question"+(left===1?"":"s")+" still waiting for you.";
+  var txt = "I survived "+n+" questions in Survival mode on Wrestling Buzz as "+ringName()+" ("+tier[0]+"). Can you beat me?\n"+location.href.split("#")[0];
+  $("share").href = "https://wa.me/?text=" + encodeURIComponent(txt);
+  window.scrollTo(0,0);
+}
+
+/* ---------------- daily spin (on the Career page) ---------------- */
+var SPIN = {vals:[10,25,10,100,50,20], w:[25,15,25,3,10,22]};
+var spinning = false;
+function renderSpin(){
+  var box = $("c-spin"); box.innerHTML = "";
+  if(!isUnlocked("spin")){ box.appendChild(lockCard("spin")); return; }
+  var card = el("div","card spincard");
+  var wrap = el("div","wheelwrap");
+  wrap.appendChild(el("div","wptr"));
+  var wheel = el("div","wheel"); wheel.id = "wheel";
+  SPIN.vals.forEach(function(v,i){
+    var lab = el("span","wl","+"+v);
+    lab.style.transform = "rotate("+(i*60+30)+"deg) translateY(-92px)";
+    wheel.appendChild(lab);
+  });
+  wrap.appendChild(wheel); card.appendChild(wrap);
+  var done = PROF.lastSpin===todayStr();
+  var btn = el("button","btn", done ? "Come back tomorrow" : "Spin the wheel"); btn.type = "button"; btn.id = "spin-btn"; btn.disabled = done;
+  var res = el("p","spinres", done ? "You've used today's spin." : "One free spin every day.");
+  res.id = "spin-res";
+  btn.addEventListener("click", function(){
+    if(spinning || PROF.lastSpin===todayStr()) return;
+    spinning = true; btn.disabled = true;
+    var tot = SPIN.w.reduce(function(a,b){ return a+b; },0), r = Math.random()*tot, idxw = 0;
+    for(var i=0;i<SPIN.w.length;i++){ r -= SPIN.w[i]; if(r<=0){ idxw = i; break; } }
+    var prize = SPIN.vals[idxw], angle = 360*5 - (idxw*60+30);
+    wheel.style.transform = "rotate("+angle+"deg)";
+    PROF.lastSpin = todayStr(); PROF.xp += prize;
+    if(prize===100) giveBadge("lucky");
+    saveProfile();
+    res.textContent = "Spinning...";
+    setTimeout(function(){
+      spinning = false;
+      res.textContent = "You won +"+prize+" XP!"; btn.textContent = "Come back tomorrow";
+      announceUnlocks();
+    }, 4300);
+  });
+  card.appendChild(btn); card.appendChild(res);
+  box.appendChild(card);
+}
+
+/* =====================================================================
    CONTENT LOADING (content.json is how admin changes go live)
    ===================================================================== */
-function validContent(j){
+function validContentBase(j){
   if(!j || !Array.isArray(j.questions)) return false;
   if(j.news && !Array.isArray(j.news)) return false;
   return j.questions.every(function(q){
@@ -1171,15 +1571,22 @@ function validContent(j){
            Array.isArray(q.o) && q.o.length===4 && typeof q.a==="number" && q.a>=0 && q.a<4;
   });
 }
+function validContent(j){
+  if(!validContentBase(j)) return false;
+  if(j.events){ if(!Array.isArray(j.events)) return false; if(!j.events.every(validEvent)) return false; }
+  return true;
+}
 function normalise(j){
   var maxId = 0; j.questions.forEach(function(q){ if(q.id>maxId) maxId=q.id; });
   (j.news||[]).forEach(function(n){ if(n.id>maxId) maxId=n.id; });
-  return { nextId: Math.max(j.nextId||0, maxId+1), questions: j.questions, news: j.news||[] };
+  (j.events||[]).forEach(function(n){ if(n.id>maxId) maxId=n.id; });
+  return { nextId: Math.max(j.nextId||0, maxId+1), questions: j.questions, news: j.news||[], events: j.events||[] };
 }
 function applyContent(j){
   CONTENT = normalise(clone(j));
   QUESTIONS = CONTENT.questions;
   renderNews();
+  if(location.hash==="#predict") renderPredict();
   if(!$("q-setup").hidden) showSetup();
   if(adminOpen) loadAdmin();
 }
@@ -1194,7 +1601,7 @@ try{
    ROUTER
    ===================================================================== */
 var adminOpen = false;
-var VIEWS = ["quiz","career","trending","contact","admin"];
+var VIEWS = ["quiz","predict","career","chat","trending","contact","admin"];
 function route(){
   var h = (location.hash||"#quiz").replace("#","");
   if(VIEWS.indexOf(h)<0) h="quiz";
@@ -1202,13 +1609,19 @@ function route(){
   document.querySelectorAll("[data-nav]").forEach(function(a){
     if(a.getAttribute("data-nav")===h) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current");
   });
-  var names = {quiz:"WWE Quiz", career:"Your career", trending:"Trending", contact:"Message us", admin:"Admin"};
+  var names = {quiz:"WWE Quiz", predict:"Predict", career:"Your career", chat:"Locker Room", trending:"Trending", contact:"Message us", admin:"Admin"};
   document.title = names[h] + " | Wrestling Buzz";
   adminOpen = (h==="admin");
   if(h!=="quiz") stopTimer();
   if(adminOpen) showAdminGate();
-  if(h==="career") renderCareer();
+  clearInterval(chatTimer); chatTimer = 0;
+  if(h==="career"){ renderCareer(); renderSections(); }
+  if(h==="chat") renderChat();
+  if(h==="trending") renderNews();
+  clearInterval(predTimer); predTimer = 0;
+  if(h==="predict"){ renderPredict(); predTimer = setInterval(tickPredict, 1000); }
   if(h==="quiz" && !$("q-setup").hidden) renderStrip();
+  announceUnlocks();
   window.scrollTo(0,0);
 }
 window.addEventListener("hashchange", route);
@@ -1229,6 +1642,13 @@ function renderNews(){
   $("newsbox").hidden = items.length===0;
   items.forEach(function(n){
     var c = document.createElement("div"); c.className = "card";
+    if(n.insider && !isUnlocked("insiders")){
+      c.classList.add("insidercard");
+      c.appendChild(el("h4","",n.title));
+      c.appendChild(el("p","when",fmtDate(n.date)));
+      c.appendChild(lockCard("insiders"));
+      list.appendChild(c); return;
+    }
     if(safeImg(n.img)){ var im = document.createElement("img"); im.className = "nimg"; im.loading = "lazy"; im.alt = n.title; im.src = n.img; c.appendChild(im); }
     var h = document.createElement("h4"); h.textContent = n.title;
     var d = document.createElement("p"); d.className = "when"; d.textContent = fmtDate(n.date);
@@ -1283,14 +1703,15 @@ function refreshChips(){
   });
 }
 function refreshStart(){
-  var n = $("nm").value.trim();
-  $("start").disabled = !(n || player.gim) || unseen().length===0;
+  var n = $("nm").value.trim(), can = !!(n || player.gim) && unseen().length>0;
+  $("start").disabled = !can;
+  ["mode-cat-go","mode-surv-go"].forEach(function(id){ var b = $(id); if(b) b.disabled = !can; });
 }
 $("nm").addEventListener("input", refreshStart);
 
 function showSetup(){
   stopTimer();
-  buildGimmicks(); renderStrip();
+  buildGimmicks(); renderStrip(); renderModes();
   $("q-setup").hidden=false; $("q-play").hidden=true; $("q-end").hidden=true;
   var left = unseen().length;
   $("setup-info").textContent = left===0
@@ -1307,14 +1728,18 @@ $("start").addEventListener("click", function(){
 
 function ringName(){ return player.name || player.gim; }
 
-function startRound(){
-  var pool = shuffle(unseen()).slice(0, ROUND_SIZE);
+function startRound(opts){
+  opts = (opts && typeof opts==="object" && !opts.target) ? opts : {};
+  mode = opts.mode==="survival" ? "survival" : "classic";
+  var pool;
+  if(mode==="survival") pool = shuffle(unseen());
+  else if(opts.cat) pool = shuffle(unseen().filter(function(q){ return q.cat===opts.cat; })).slice(0, ROUND_SIZE);
+  else pool = shuffle(unseen()).slice(0, ROUND_SIZE);
   if(!pool.length){ showSetup(); return; }
-  round = pool; idx = 0; score = 0; byCat = {};
+  round = pool; idx = 0; score = 0; byCat = {}; lives = 3; survCorrect = 0;
   rx = {ans:0, speed:0}; fastCorrect = 0; levelBefore = levelFor(PROF.xp).n;
   $("who").textContent = ringName();
   $("who-g").textContent = (player.name && player.gim) ? player.gim : "";
-  $("qt").textContent = round.length;
   $("q-setup").hidden=true; $("q-end").hidden=true; $("q-play").hidden=false;
   showQuestion();
 }
@@ -1322,7 +1747,7 @@ function startRound(){
 function showQuestion(){
   var q = round[idx]; answered = false; selected = null;
   markSeen(q.id);                                   /* counts as seen the moment it appears, so a refresh can't bring it back */
-  $("qn").textContent = idx+1;
+  updateMeta();
   $("qcat").textContent = q.cat;
   $("qtext").textContent = q.q;
   $("refbox").innerHTML = ""; $("nextrow").hidden = true;
@@ -1397,6 +1822,7 @@ function submitAnswer(){
   if(ok) score++;
   awardAnswer(ok);
   tally(q, ok);
+  if(mode==="survival"){ if(ok) survCorrect++; else lives--; updateMeta(); if(lives<=0) $("next").textContent = "See my result"; }
   say(ok?"good":"bad", pick(ok?REF_GOOD:REF_BAD));
 }
 $("submit").addEventListener("click", submitAnswer);
@@ -1408,10 +1834,15 @@ function timeUp(){
   document.querySelectorAll("#opts .opt").forEach(function(b){ b.classList.add("dim"); });
   awardAnswer(false);
   tally(round[idx], false);
+  if(mode==="survival"){ lives--; updateMeta(); if(lives<=0) $("next").textContent = "See my result"; }
   say("time", pick(REF_TIME));
 }
 
 $("next").addEventListener("click", function(){
+  if(mode==="survival"){
+    if(lives<=0 || idx>=round.length-1) finishSurvival(); else { idx++; showQuestion(); }
+    return;
+  }
   if(idx < round.length-1){ idx++; showQuestion(); } else { finish(); }
 });
 
@@ -1420,7 +1851,7 @@ function finish(){
   var total = round.length, pct = total ? score/total : 0;
   $("q-play").hidden = true; $("q-end").hidden = false;
   $("end-who").textContent = ringName() + (player.name && player.gim ? " ("+player.gim+")" : "");
-  $("sc").textContent = score; $("st").textContent = total;
+  $("sc").textContent = score; $("st").textContent = total; $("st").parentNode.hidden = false;
 
   var tier;
   if(pct>=.9) tier = ["Hall of Famer","Flawless work on the hard ones. Even the ref is clapping."];
@@ -1590,12 +2021,13 @@ function renderAdmin(){
       if(confirm("Delete this news post?")){ draft.news = draft.news.filter(function(x){ return x.id!==n.id; }); saveDraft(); }
     });
     top.appendChild(tg); top.appendChild(del);
-    var t = document.createElement("p"); t.className = "aq"; t.textContent = n.title;
+    var t = document.createElement("p"); t.className = "aq"; t.textContent = n.title + (n.insider ? " (insiders only)" : "");
     var b = document.createElement("p"); b.className = "aa"; b.textContent = n.body;
     row.appendChild(top); row.appendChild(t);
     if(safeImg(n.img)){ var th = document.createElement("img"); th.className = "thumb"; th.alt = ""; th.src = n.img; row.appendChild(th); }
     row.appendChild(b); nl.appendChild(row);
   });
+  renderAdminEvents();
 }
 
 $("addq").addEventListener("submit", function(e){
@@ -1654,6 +2086,7 @@ $("addn").addEventListener("submit", function(e){
   if(!t || !b){ m.textContent = "Add a headline and the news text."; m.classList.add("err"); return; }
   var item = {id:draft.nextId++, date:new Date().toISOString(), title:t, body:b};
   if(newsImg) item.img = newsImg;
+  if($("an-ins").checked) item.insider = true;
   draft.news.push(item);
   saveDraft();
   $("addn").reset(); clearNewsImg();
@@ -1710,6 +2143,505 @@ showInstall();
 if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
   window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
 }
+
+/* =====================================================================
+   PREDICTIONS (weekly shows: RAW, SmackDown and big events)
+   Admins publish a card with matches and bonus questions. Players pick before the show starts.
+   After the show, the admin sets the results and players earn XP for correct picks.
+   ===================================================================== */
+var PICKS_KEY = "wb_preds_v1";
+var XP_MATCH = 25, XP_BONUS = 15, XP_PERFECT = 50;
+var BONUS_PRESETS = [
+  {q:"Will somebody interfere in a match?", o:["Yes","No"]},
+  {q:"Will a title change hands?", o:["Yes","No"]},
+  {q:"Will a wrestler turn heel?", o:["Yes","No"]},
+  {q:"How will the main event end?", o:["Pinfall","Submission","DQ or no contest"]}
+];
+var predTimer = 0;
+
+function validEvent(ev){
+  return ev && typeof ev.id==="number" && typeof ev.title==="string" && typeof ev.closes==="string" && !isNaN(Date.parse(ev.closes)) &&
+    Array.isArray(ev.picks) && ev.picks.length>0 && ev.picks.every(function(p){
+      return p && typeof p.q==="string" && Array.isArray(p.o) && p.o.length>=2 &&
+             (p.a===null || p.a===undefined || (typeof p.a==="number" && p.a>=-1 && p.a<p.o.length));
+    });
+}
+
+function getAllPicks(){ try{ var o = JSON.parse(store(PICKS_KEY)||"{}"); return (o && typeof o==="object") ? o : {}; }catch(e){ return {}; } }
+function getPicks(evId){ var a = getAllPicks()[evId]; return Array.isArray(a) ? a : null; }
+function setPick(evId, i, idx, n){
+  var all = getAllPicks(), arr = Array.isArray(all[evId]) ? all[evId] : [];
+  while(arr.length<n) arr.push(null);
+  arr[i] = idx; all[evId] = arr; store(PICKS_KEY, JSON.stringify(all));
+}
+
+function evState(ev){
+  var closed = Date.now() >= Date.parse(ev.closes);
+  var done = ev.released===true && ev.picks.every(function(p){ return p.a!==null && p.a!==undefined; });
+  if(done) return "done";
+  return closed ? "locked" : "open";
+}
+function fmtLeft(ms){
+  var m = Math.floor(ms/60000), d = Math.floor(m/1440), h = Math.floor((m%1440)/60), mm = m%60;
+  if(d>0) return d+"d "+h+"h";
+  if(h>0) return h+"h "+mm+"m";
+  return Math.max(1,mm)+"m";
+}
+function fmtClock(ms){
+  var t = Math.max(0, Math.floor(ms/1000)), d = Math.floor(t/86400), h = Math.floor((t%86400)/3600), m = Math.floor((t%3600)/60), sec = t%60;
+  if(d>0) return d+"d "+h+"h "+pad2(m)+"m";
+  return pad2(h)+":"+pad2(m)+":"+pad2(sec);
+}
+function toLocalInput(iso){
+  var d = new Date(iso);
+  return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate())+"T"+pad2(d.getHours())+":"+pad2(d.getMinutes());
+}
+function fmtWhen(iso){
+  try{ return new Date(iso).toLocaleString(undefined,{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}); }catch(e){ return iso; }
+}
+function giveBadge(id){ if(!PROF.badges[id]){ PROF.badges[id] = todayStr(); return true; } return false; }
+
+/* works out rewards once for every show whose results are all in */
+function scoreEvents(){
+  var notes = [];
+  (CONTENT.events||[]).forEach(function(ev){
+    if(PROF.pred[ev.id]) return;
+    if(evState(ev)!=="done") return;
+    var mine = getPicks(ev.id); if(!mine) return;
+    var xp = 0, correct = 0, scored = 0, made = 0, mult = ev.big ? 2 : 1;
+    ev.picks.forEach(function(p,i){
+      if(p.a<0) return;                                   /* void: cancelled or not decided */
+      scored++;
+      var c = mine[i]; if(c===null || c===undefined) return;
+      made++;
+      if(c===p.a){ correct++; xp += (p.t==="bonus" ? XP_BONUS : XP_MATCH) * mult; }
+    });
+    if(made===0) return;
+    var perfect = scored>=2 && correct===scored;
+    if(perfect) xp += XP_PERFECT * mult;
+    PROF.pred[ev.id] = {xp:xp, correct:correct, total:scored, perfect:perfect};
+    PROF.xp += xp;
+    var got = [];
+    if(correct>=1 && giveBadge("called_it")) got.push("Called It");
+    if(perfect && giveBadge("fortune_teller")) got.push("Fortune Teller");
+    var totalCorrect = 0; Object.keys(PROF.pred).forEach(function(k){ totalCorrect += PROF.pred[k].correct; });
+    if(totalCorrect>=10 && giveBadge("oracle")) got.push("Oracle");
+    notes.push({title:ev.title, xp:xp, correct:correct, total:scored, perfect:perfect, badges:got});
+  });
+  if(notes.length) saveProfile();
+  return notes;
+}
+
+function renderPredict(){
+  var notes = scoreEvents();
+  var top = $("prednotes"); top.innerHTML = "";
+  notes.forEach(function(n){
+    var t = n.title+": "+n.correct+" of "+n.total+" right. +"+n.xp+" XP"+(n.perfect?" (perfect card bonus!)":"");
+    top.appendChild(el("div","unlock lvl",t));
+    n.badges.forEach(function(b){ top.appendChild(el("div","unlock bdg","New badge: "+b)); });
+  });
+
+  var box = $("predlist"); box.innerHTML = "";
+  var evs = (CONTENT.events||[]).slice().sort(function(a,b){ return Date.parse(b.closes)-Date.parse(a.closes); }).slice(0,8);
+  $("prednone").hidden = evs.length>0;
+  evs.forEach(function(ev){
+    var st = evState(ev), mine = getPicks(ev.id) || [];
+    var card = el("div","card ev");
+    card.appendChild(el("h4","",ev.title));
+    if(ev.big) card.appendChild(el("p","bigtag","BIG EVENT: DOUBLE XP"));
+    var status = el("p","pstat");
+    if(st==="open"){
+      status.appendChild(el("span","pbadge open","Picks open"));
+      status.appendChild(document.createTextNode(" Closes "+fmtWhen(ev.closes)));
+    } else if(st==="locked"){
+      status.appendChild(el("span","pbadge lock","Picks locked"));
+      status.appendChild(document.createTextNode(" Results coming soon."));
+    } else {
+      status.appendChild(el("span","pbadge done","Results are in"));
+    }
+    card.appendChild(status);
+    var tm = el("div","ptimer"+(st==="open"?"":" closed"));
+    if(st==="open"){
+      var left0 = Date.parse(ev.closes)-Date.now();
+      tm.appendChild(el("span","plabel","Picks close in"));
+      var clk = el("span","pclock"+(left0<=600000?" urgent":""), fmtClock(left0)); clk.dataset.closes = ev.closes; tm.appendChild(clk);
+    } else {
+      tm.appendChild(el("span","plabel", st==="done" ? "Results are in" : "Picks are"));
+      tm.appendChild(el("span","pclock", st==="done" ? "FINAL" : "CLOSED"));
+    }
+    card.appendChild(tm);
+    if(ev.big && !isUnlocked("bigpicks") && st!=="done"){ card.appendChild(lockCard("bigpicks")); box.appendChild(card); return; }
+
+    ev.picks.forEach(function(p,i){
+      card.appendChild(el("p","pq",p.q));
+      var opts = el("div","popts");
+      p.o.forEach(function(o,k){
+        var b = el("button","popt",o); b.type = "button";
+        var chosen = mine[i]===k;
+        if(st==="open"){
+          b.setAttribute("aria-pressed", chosen?"true":"false");
+          if(chosen) b.classList.add("sel");
+          b.addEventListener("click", function(){
+            if(Date.now() >= Date.parse(ev.closes)){ renderPredict(); return; }
+            setPick(ev.id, i, k, ev.picks.length);
+            Array.prototype.forEach.call(opts.children, function(x,j){ x.classList.toggle("sel", j===k); x.setAttribute("aria-pressed", j===k?"true":"false"); });
+            updateCount(card, ev);
+          });
+        } else {
+          b.disabled = true;
+          if(chosen) b.classList.add("sel");
+          if(st==="done" && p.a>=0){
+            if(k===p.a) b.classList.add("right");
+            else if(chosen) b.classList.add("wrong");
+          }
+        }
+        opts.appendChild(b);
+      });
+      card.appendChild(opts);
+      if(st==="done"){
+        if(p.a<0) card.appendChild(el("p","pnote","Not counted (no result for this one)."));
+        else if(mine[i]===p.a) card.appendChild(el("p","pnote good","You called it. +"+((p.t==="bonus"?XP_BONUS:XP_MATCH)*(ev.big?2:1))+" XP"));
+        else if(mine[i]===null || mine[i]===undefined) card.appendChild(el("p","pnote","You didn't pick this one."));
+        else card.appendChild(el("p","pnote","Not this time."));
+      }
+    });
+
+    if(st==="open"){
+      var prog = el("p","pprog"); prog.dataset.prog = "1"; card.appendChild(prog);
+      updateCount(card, ev);
+    } else if(st==="done"){
+      var r = PROF.pred[ev.id];
+      card.appendChild(el("div","unlock"+(r&&r.xp>0?" bdg":""), r ? ("Your score: "+r.correct+" of "+r.total+" right. +"+r.xp+" XP"+(r.perfect?" including the perfect card bonus":"")) : "You didn't make picks for this show."));
+    }
+    box.appendChild(card);
+  });
+}
+function updateCount(card, ev){
+  var mine = getPicks(ev.id) || [], n = 0;
+  ev.picks.forEach(function(p,i){ if(mine[i]!==null && mine[i]!==undefined) n++; });
+  var p = card.querySelector("[data-prog]");
+  if(p) p.textContent = n+" of "+ev.picks.length+" picked. You can change your picks until they lock.";
+}
+function tickPredict(){
+  var flipped = false;
+  document.querySelectorAll(".pclock[data-closes]").forEach(function(c){
+    var left = Date.parse(c.dataset.closes)-Date.now();
+    if(left<=0){ flipped = true; return; }
+    c.textContent = fmtClock(left);
+    c.classList.toggle("urgent", left<=600000);
+  });
+  if(flipped) renderPredict();
+}
+
+/* ---------------- admin: shows ---------------- */
+var openResultsId = null, openTimeId = null;
+
+(function(){
+  var box = $("ae-bonus");
+  BONUS_PRESETS.forEach(function(b,i){
+    var lab = document.createElement("label"); lab.className = "chk";
+    var cb = document.createElement("input"); cb.type = "checkbox"; cb.id = "ae-b"+i;
+    lab.appendChild(cb); lab.appendChild(document.createTextNode(" "+b.q+" ("+b.o.join(" / ")+")"));
+    box.appendChild(lab);
+  });
+})();
+
+$("adde").addEventListener("submit", function(e){
+  e.preventDefault();
+  var m = $("aemsg"); m.className = "msg";
+  function bad(t){ m.textContent = t; m.classList.add("err"); }
+  var title = $("ae-t").value.trim(), closesVal = $("ae-c").value;
+  if(!title) return bad("Add the show name.");
+  if(!closesVal) return bad("Pick the time the picks should close.");
+  var closes = new Date(closesVal); if(isNaN(closes.getTime())) return bad("That closing time isn't valid.");
+  var picks = [];
+
+  var lines = $("ae-m").value.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
+  for(var i=0;i<lines.length;i++){
+    var line = lines[i], body = line.indexOf(":")>=0 ? line.slice(line.indexOf(":")+1) : line;
+    var opts = body.split(/\s+vs\.?\s+/i).map(function(x){ return x.trim(); }).filter(Boolean);
+    if(opts.length<2) return bad('Write this match as "A vs B": '+line);
+    var low = opts.map(function(x){ return x.toLowerCase(); });
+    if(low.some(function(x,k){ return low.indexOf(x)!==k; })) return bad("Same name twice in: "+line);
+    picks.push({t:"match", q:line, o:opts.slice(0,6), a:null});
+  }
+  BONUS_PRESETS.forEach(function(b,i){ if($("ae-b"+i).checked) picks.push({t:"bonus", q:b.q, o:b.o.slice(), a:null}); });
+  var custom = $("ae-x").value.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
+  for(var j=0;j<custom.length;j++){
+    var parts = custom[j].split("|").map(function(x){ return x.trim(); }).filter(Boolean);
+    if(parts.length<3) return bad('Write bonus questions as "Question | Option 1 | Option 2": '+custom[j]);
+    picks.push({t:"bonus", q:parts[0], o:parts.slice(1,6), a:null});
+  }
+  if(picks.length===0) return bad("Add at least one match or bonus question.");
+  if(picks.length>14) return bad("That's a lot of picks. Keep it to 14 or fewer.");
+
+  draft.events = draft.events || [];
+  draft.events.push({id:draft.nextId++, title:title, closes:closes.toISOString(), created:new Date().toISOString(), picks:picks, big:$("ae-big").checked});
+  saveDraft();
+  $("adde").reset();
+  m.textContent = "Show added. Remember to download content.json when you're done."; m.classList.add("ok");
+});
+
+function renderAdminEvents(){
+  var list = $("elist"); list.innerHTML = "";
+  var evs = (draft.events||[]).slice().sort(function(a,b){ return Date.parse(b.closes)-Date.parse(a.closes); });
+  $("ecount").textContent = evs.length;
+  evs.forEach(function(ev){
+    var st = evState(ev);
+    var row = el("div","arow");
+    var top = el("div","atop");
+    var allSet = ev.picks.every(function(p){ return p.a!==null && p.a!==undefined; });
+    top.appendChild(el("span","cat", st==="open" ? "Open" : (st==="done" ? "Results released" : (allSet ? "Closed, results saved but hidden" : "Closed, needs results"))));
+    var del = el("button","mini","Delete"); del.type = "button";
+    del.addEventListener("click", function(){
+      if(confirm("Delete this show?")){ draft.events = draft.events.filter(function(x){ return x.id!==ev.id; }); if(openResultsId===ev.id) openResultsId = null; saveDraft(); }
+    });
+    top.appendChild(del); row.appendChild(top);
+    row.appendChild(el("p","aq",ev.title+(ev.big?" (big event, double XP)":"")));
+    row.appendChild(el("p","aa","Closes: "+fmtWhen(ev.closes)+"   |   "+ev.picks.length+" picks"));
+    function small(text){ var x = el("button","btn ghost",text); x.type = "button"; x.style.cssText = "padding:8px 16px;min-height:0;font-size:17px"; return x; }
+    var acts = el("div","row"); acts.style.marginTop = "10px";
+    if(st==="open"){
+      var cn = small("Close picks now");
+      cn.addEventListener("click", function(){
+        if(confirm("Close picks now? Players can no longer pick once you upload the new content.json.")){ ev.closes = new Date().toISOString(); saveDraft(); }
+      });
+      acts.appendChild(cn);
+    }
+    var ct = small(openTimeId===ev.id ? "Hide time" : "Change close time");
+    ct.addEventListener("click", function(){ openTimeId = (openTimeId===ev.id) ? null : ev.id; renderAdminEvents(); });
+    acts.appendChild(ct);
+    var rs = small(openResultsId===ev.id ? "Hide results" : "Set results");
+    rs.addEventListener("click", function(){ openResultsId = (openResultsId===ev.id) ? null : ev.id; renderAdminEvents(); });
+    acts.appendChild(rs);
+    row.appendChild(acts);
+
+    if(openTimeId===ev.id){
+      var tp = el("div","respanel");
+      tp.appendChild(el("p","hint","Set a new closing time. A time in the future opens the picks again."));
+      var ti = document.createElement("input"); ti.type = "datetime-local"; ti.value = toLocalInput(ev.closes);
+      tp.appendChild(ti);
+      var ts = el("button","btn","Save time"); ts.type = "button"; ts.style.cssText = "margin-top:12px";
+      ts.addEventListener("click", function(){
+        var d = new Date(ti.value); if(isNaN(d.getTime())) return;
+        ev.closes = d.toISOString(); openTimeId = null; saveDraft();
+      });
+      tp.appendChild(ts); row.appendChild(tp);
+    }
+
+    if(openResultsId===ev.id){
+      var panel = el("div","respanel");
+      var sels = [];
+      ev.picks.forEach(function(p,i){
+        panel.appendChild(el("p","pq",p.q));
+        var s = document.createElement("select");
+        var o0 = el("option","","Not set yet"); o0.value = ""; s.appendChild(o0);
+        p.o.forEach(function(o,k){ var op = el("option","",o); op.value = String(k); s.appendChild(op); });
+        var ov = el("option","","Void (skip this one)"); ov.value = "-1"; s.appendChild(ov);
+        s.value = (p.a===null || p.a===undefined) ? "" : String(p.a);
+        panel.appendChild(s); sels.push(s);
+      });
+      var msg = el("p","msg","");
+      function apply(){ ev.picks.forEach(function(p,i){ p.a = sels[i].value==="" ? null : parseInt(sels[i].value,10); }); }
+      var save = el("button","btn ghost","Save results (keep hidden)"); save.type = "button"; save.style.cssText = "margin-top:14px";
+      save.addEventListener("click", function(){ apply(); ev.released = false; openResultsId = null; saveDraft(); });
+      var rel = el("button","btn","Save and release results"); rel.type = "button"; rel.style.cssText = "margin-top:10px";
+      rel.addEventListener("click", function(){
+        if(sels.some(function(x){ return x.value===""; })){ msg.textContent = "Set every pick (or mark it Void) before releasing."; msg.className = "msg err"; return; }
+        apply(); ev.released = true; openResultsId = null; saveDraft();
+      });
+      panel.appendChild(save); panel.appendChild(rel); panel.appendChild(msg);
+      if(ev.released){
+        var hide = el("button","btn ghost","Hide results from players again"); hide.type = "button"; hide.style.cssText = "margin-top:10px";
+        hide.addEventListener("click", function(){ ev.released = false; openResultsId = null; saveDraft(); });
+        panel.appendChild(hide);
+      }
+      panel.appendChild(el("p","hint","Players only see results and earn XP after you release them."));
+      row.appendChild(panel);
+    }
+    list.appendChild(row);
+  });
+}
+
+/* =====================================================================
+   LOCKER ROOM CHAT (unlocked at a level) + LOCKED SECTIONS
+   Chat needs a free Supabase project. Paste its address and public key below (see supabase-setup.sql and the steps).
+   Leave both empty and the chat page just says it isn't open yet.
+   ===================================================================== */
+var SUPABASE_URL = "";   /* e.g. "https://abcdxyz.supabase.co" */
+var SUPABASE_KEY = "";   /* the "anon public" key. It is meant to be public. NEVER paste the service_role key. */
+var CHAT_LEVEL = 3;      /* level needed to unlock the Locker Room */
+var CHAT_POLL_MS = 4000;
+var CHAT_BLOCKED = ["fuck","shit","bitch","asshole","bastard","dickhead","pussy","cunt","whore","slut"];   /* add more words here */
+var CHAT_CID_KEY = "wb_cid_v1", CHAT_MINE_KEY = "wb_chat_mine_v1", CHAT_REPORTED_KEY = "wb_chat_reported_v1", CHAT_SEEN_KEY = "wb_chat_unlocked_seen", MOD_KEY = "wb_mod_token";
+var chatTimer = 0, chatSig = "", chatBusy = false, lastSend = 0;
+
+function chatConfigured(){ return !!(SUPABASE_URL && SUPABASE_KEY); }
+function chatUnlocked(){ return levelFor(PROF.xp).n >= CHAT_LEVEL; }
+function myId(){
+  var v = store(CHAT_CID_KEY);
+  if(!v){
+    v = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ("c"+Date.now().toString(36)+Math.random().toString(36).slice(2,12));
+    store(CHAT_CID_KEY, v);
+  }
+  return v;
+}
+function readList(k){ try{ var a = JSON.parse(store(k)||"[]"); return Array.isArray(a) ? a : []; }catch(e){ return []; } }
+function pushList(k, v, max){ var a = readList(k); a.push(v); store(k, JSON.stringify(a.slice(-max))); }
+function modToken(){
+  try{ var t = JSON.parse(sessionStorage.getItem(MOD_KEY)||"null"); if(t && t.exp>Date.now()) return t.token; }catch(e){}
+  return "";
+}
+function sbHead(extra){
+  var h = {"apikey":SUPABASE_KEY, "Authorization":"Bearer "+(modToken()||SUPABASE_KEY), "Content-Type":"application/json"};
+  if(extra) Object.keys(extra).forEach(function(k){ h[k] = extra[k]; });
+  return h;
+}
+function cleanText(t){
+  var low = t.toLowerCase();
+  if(/(https?:\/\/|www\.|\.com|\.net|\.org|\.io)/.test(low)) return "links";
+  var squashed = low.replace(/[^a-z]/g,"");
+  for(var i=0;i<CHAT_BLOCKED.length;i++){ if(squashed.indexOf(CHAT_BLOCKED[i])>=0) return "language"; }
+  return "";
+}
+function fmtTime(iso){ try{ return new Date(iso).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}); }catch(e){ return ""; } }
+
+function renderChat(){
+  var locked = !chatUnlocked();
+  $("chat-locked").hidden = !locked;
+  $("chat-off").hidden = locked || chatConfigured();
+  $("chat-main").hidden = locked || !chatConfigured();
+  var note = $("chat-note"); note.innerHTML = "";
+  if(locked){
+    var box = $("chat-locked"); box.innerHTML = "";
+    var need = LEVELS[CHAT_LEVEL-1], L = levelFor(PROF.xp);
+    box.appendChild(el("p","lockico","LOCKED"));
+    box.appendChild(el("h3","","The Locker Room is locked"));
+    box.appendChild(el("p","lead","Reach Level "+CHAT_LEVEL+" ("+need.t+") to chat with other fans. You are Level "+L.n+" with "+PROF.xp+" of "+need.xp+" XP."));
+    box.appendChild(xpBar(Math.min(1, PROF.xp/need.xp)));
+    var a = el("a","btn","Earn XP in the quiz"); a.href = "#quiz"; a.style.marginTop = "18px"; box.appendChild(a);
+    return;
+  }
+  if(store(CHAT_SEEN_KEY)!=="1"){ note.appendChild(el("div","unlock lvl","LOCKER ROOM UNLOCKED!")); store(CHAT_SEEN_KEY,"1"); }
+  if(!chatConfigured()) return;
+  var nm = $("chat-name");
+  if(!nm.value) nm.value = (store(NAME_KEY) || store(GIM_KEY) || "").slice(0,24);
+  modUI();
+  chatSig = "";
+  loadMessages();
+  clearInterval(chatTimer);
+  chatTimer = setInterval(function(){ if(!document.hidden) loadMessages(); }, CHAT_POLL_MS);
+}
+
+function loadMessages(){
+  if(chatBusy) return; chatBusy = true;
+  fetch(SUPABASE_URL+"/rest/v1/messages?select=id,created_at,name,lvl,body,reports&order=created_at.desc&limit=60", {headers:sbHead()})
+    .then(function(r){ if(!r.ok) throw new Error("bad"); return r.json(); })
+    .then(function(rows){ chatBusy = false; if($("chat-status").textContent.indexOf("Can't reach")===0){ $("chat-status").textContent = ""; $("chat-status").className = "msg"; } drawMessages(rows.reverse()); })
+    .catch(function(){ chatBusy = false; var s = $("chat-status"); s.className = "msg err"; s.textContent = "Can't reach the chat right now. Trying again..."; });
+}
+
+function drawMessages(rows){
+  var sig = rows.map(function(r){ return r.id+":"+r.reports; }).join(",");
+  if(sig===chatSig) return; chatSig = sig;
+  var list = $("chat-list");
+  var atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 90 || list.childElementCount===0;
+  list.innerHTML = "";
+  var mine = readList(CHAT_MINE_KEY), reported = readList(CHAT_REPORTED_KEY), isMod = !!modToken();
+  if(!rows.length) list.appendChild(el("p","cempty","No messages yet. Say hello!"));
+  rows.forEach(function(r){
+    var me = mine.indexOf(r.id)>=0;
+    var m = el("div","cmsg"+(me?" me":""));
+    var head = el("div","chead");
+    head.appendChild(el("span","cname", r.name));
+    head.appendChild(el("span","clv","Lv "+r.lvl));
+    head.appendChild(el("span","ctime", fmtTime(r.created_at)));
+    m.appendChild(head);
+    m.appendChild(el("div","cbody", r.body));
+    var acts = el("div","cact");
+    if(!me && reported.indexOf(r.id)<0){
+      var rp = el("button","mini","Report"); rp.type = "button";
+      rp.addEventListener("click", function(){ reportMsg(r.id, rp); });
+      acts.appendChild(rp);
+    }
+    if(isMod){
+      var dl = el("button","mini","Delete"); dl.type = "button";
+      dl.addEventListener("click", function(){ deleteMsg(r.id); });
+      acts.appendChild(dl);
+      if(r.reports>=3) acts.appendChild(el("span","cflag","Reported (hidden from players)"));
+    }
+    if(acts.childElementCount) m.appendChild(acts);
+    list.appendChild(m);
+  });
+  if(atBottom) list.scrollTop = list.scrollHeight;
+}
+
+function reportMsg(id, btn){
+  if(!confirm("Report this message to the moderators?")) return;
+  btn.disabled = true; btn.textContent = "Reported";
+  pushList(CHAT_REPORTED_KEY, id, 200);
+  fetch(SUPABASE_URL+"/rest/v1/rpc/report_message", {method:"POST", headers:sbHead(), body:JSON.stringify({mid:id})}).catch(function(){});
+}
+function deleteMsg(id){
+  if(!confirm("Delete this message for everyone?")) return;
+  fetch(SUPABASE_URL+"/rest/v1/messages?id=eq."+encodeURIComponent(id), {method:"DELETE", headers:sbHead({"Prefer":"return=minimal"})})
+    .then(function(){ chatSig = ""; loadMessages(); }).catch(function(){});
+}
+
+$("chat-form").addEventListener("submit", function(e){
+  e.preventDefault();
+  var st = $("chat-status"); st.className = "msg";
+  function bad(t){ st.textContent = t; st.classList.add("err"); }
+  var name = $("chat-name").value.trim().slice(0,24), body = $("chat-input").value.trim();
+  if(!name) return bad("Choose a chat name first.");
+  if(!body) return;
+  if(body.length>280) return bad("Keep it under 280 characters.");
+  var why = cleanText(body) || cleanText(name);
+  if(why==="links") return bad("No links please.");
+  if(why==="language") return bad("Keep it clean, please.");
+  if(Date.now()-lastSend < 3000) return bad("Slow down a little.");
+  lastSend = Date.now();
+  store(NAME_KEY, name);
+  var btn = $("chat-send"); btn.disabled = true;
+  fetch(SUPABASE_URL+"/rest/v1/messages", {method:"POST", headers:sbHead({"Prefer":"return=representation"}),
+        body:JSON.stringify({client_id:myId(), name:name, lvl:levelFor(PROF.xp).n, body:body})})
+    .then(function(r){ if(!r.ok) throw new Error("bad"); return r.json(); })
+    .then(function(rows){
+      if(rows && rows[0] && rows[0].id) pushList(CHAT_MINE_KEY, rows[0].id, 200);
+      $("chat-input").value = ""; st.textContent = ""; chatSig = ""; loadMessages();
+    })
+    .catch(function(){ bad("That message wasn't sent. You may be sending too fast, or it was blocked."); })
+    .then(function(){ btn.disabled = false; });
+});
+
+/* moderators sign in with an email and password created in Supabase */
+function modUI(){
+  var on = !!modToken();
+  $("mod-form").hidden = on; $("mod-out").hidden = !on;
+  $("mod-state").textContent = on ? "Signed in as moderator. You can delete messages." : "";
+}
+$("mod-form").addEventListener("submit", function(e){
+  e.preventDefault();
+  var m = $("mod-msg"); m.className = "msg"; m.textContent = "Signing in...";
+  fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password", {method:"POST", headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
+        body:JSON.stringify({email:$("mod-email").value.trim(), password:$("mod-pw").value})})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(j && j.access_token){
+        try{ sessionStorage.setItem(MOD_KEY, JSON.stringify({token:j.access_token, exp:Date.now()+((j.expires_in||3600)*1000)-60000})); }catch(err){}
+        $("mod-pw").value = ""; m.textContent = ""; modUI(); chatSig = ""; loadMessages();
+      } else { m.textContent = "Wrong email or password."; m.classList.add("err"); }
+    })
+    .catch(function(){ m.textContent = "Couldn't sign in. Try again."; m.classList.add("err"); });
+});
+$("mod-out").addEventListener("click", function(){
+  try{ sessionStorage.removeItem(MOD_KEY); }catch(e){}
+  modUI(); chatSig = ""; loadMessages();
+});
+
+
+/* the Chat tab stays hidden until the chat is set up (SUPABASE_URL and SUPABASE_KEY above) */
+if(!chatConfigured()){ var chatTab = document.querySelector('[data-nav="chat"]'); if(chatTab) chatTab.hidden = true; }
 
 route();
 
