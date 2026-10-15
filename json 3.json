@@ -1,0 +1,379 @@
+{
+  "nextId": 34,
+  "questions": [
+    {
+      "id": 1,
+      "cat": "Money in the Bank",
+      "q": "Who won the first-ever Money in the Bank Ladder Match at WrestleMania 21?",
+      "o": [
+        "Chris Benoit",
+        "Edge",
+        "Christian",
+        "Kane"
+      ],
+      "a": 1
+    },
+    {
+      "id": 2,
+      "cat": "Money in the Bank",
+      "q": "Who was the first wrestler to successfully cash in the Money in the Bank contract?",
+      "o": [
+        "Rob Van Dam",
+        "CM Punk",
+        "Edge",
+        "Seth Rollins"
+      ],
+      "a": 2
+    },
+    {
+      "id": 3,
+      "cat": "Title history",
+      "q": "Who was recognized as the first WWE Intercontinental Champion?",
+      "o": [
+        "Ted DiBiase",
+        "Pat Patterson",
+        "Ricky Steamboat",
+        "Don Muraco"
+      ],
+      "a": 1
+    },
+    {
+      "id": 4,
+      "cat": "Title history",
+      "q": "Who became the first WWE Universal Champion in 2016?",
+      "o": [
+        "Seth Rollins",
+        "Roman Reigns",
+        "Finn Bálor",
+        "Kevin Owens"
+      ],
+      "a": 2
+    },
+    {
+      "id": 5,
+      "cat": "Title history",
+      "q": "Which team won the inaugural WWE Women's Tag Team Championship in 2019?",
+      "o": [
+        "The Boss 'n' Hug Connection (Bayley and Sasha Banks)",
+        "The IIconics (Billie Kay and Peyton Royce)",
+        "The Riott Squad (Ruby Riott and Liv Morgan)",
+        "Nia Jax and Tamina"
+      ],
+      "a": 0
+    },
+    {
+      "id": 6,
+      "cat": "Title history",
+      "q": "Who won the tournament to become WWE United States Champion at Vengeance 2003?",
+      "o": [
+        "Chris Benoit",
+        "Rey Mysterio",
+        "Eddie Guerrero",
+        "Billy Gunn"
+      ],
+      "a": 2
+    },
+    {
+      "id": 7,
+      "cat": "Title history",
+      "q": "Who became the inaugural NXT Women's Champion?",
+      "o": [
+        "Bayley",
+        "Paige",
+        "Sasha Banks",
+        "Charlotte Flair"
+      ],
+      "a": 1
+    },
+    {
+      "id": 8,
+      "cat": "Title history",
+      "q": "Who was recognized as the first WWE Champion in 1963?",
+      "o": [
+        "Bruno Sammartino",
+        "Lou Thesz",
+        "Buddy Rogers",
+        "Pedro Morales"
+      ],
+      "a": 2
+    },
+    {
+      "id": 9,
+      "cat": "Title history",
+      "q": "Who holds the record for the longest single WWE Championship reign?",
+      "o": [
+        "Hulk Hogan",
+        "Bob Backlund",
+        "Roman Reigns",
+        "Bruno Sammartino"
+      ],
+      "a": 3
+    },
+    {
+      "id": 10,
+      "cat": "Title history",
+      "q": "Who holds the record for the longest WWE Intercontinental Championship reign?",
+      "o": [
+        "Pat Patterson",
+        "Bret Hart",
+        "The Honky Tonk Man",
+        "The Ultimate Warrior"
+      ],
+      "a": 2
+    },
+    {
+      "id": 11,
+      "cat": "Royal Rumble",
+      "q": "Who was the first wrestler to win back-to-back men's Royal Rumble matches?",
+      "o": [
+        "Shawn Michaels (1995 and 1996)",
+        "Hulk Hogan (1990 and 1991)",
+        "Stone Cold Steve Austin (1997 and 1998)",
+        "Triple H (2002 and 2016)"
+      ],
+      "a": 1
+    },
+    {
+      "id": 12,
+      "cat": "Royal Rumble",
+      "q": "Who won the 1995 Royal Rumble after entering at number one?",
+      "o": [
+        "Bret Hart",
+        "Diesel",
+        "Shawn Michaels",
+        "Razor Ramon"
+      ],
+      "a": 2
+    },
+    {
+      "id": 13,
+      "cat": "Royal Rumble",
+      "q": "Who holds the record for the longest time spent in a traditional men's Royal Rumble match?",
+      "o": [
+        "Rey Mysterio",
+        "Chris Benoit",
+        "Roman Reigns",
+        "Gunther"
+      ],
+      "a": 3
+    },
+    {
+      "id": 14,
+      "cat": "Royal Rumble",
+      "q": "Who eliminated the most opponents in the 2020 men's Royal Rumble match?",
+      "o": [
+        "Roman Reigns",
+        "Drew McIntyre",
+        "Brock Lesnar",
+        "Braun Strowman"
+      ],
+      "a": 2
+    },
+    {
+      "id": 15,
+      "cat": "Royal Rumble",
+      "q": "Who won the inaugural Women's Royal Rumble match in 2018?",
+      "o": [
+        "Becky Lynch",
+        "Charlotte Flair",
+        "Nia Jax",
+        "Asuka"
+      ],
+      "a": 3
+    },
+    {
+      "id": 16,
+      "cat": "Royal Rumble",
+      "q": "Who won the 2007 Royal Rumble after entering at number 30?",
+      "o": [
+        "Batista",
+        "John Cena",
+        "The Undertaker",
+        "Randy Orton"
+      ],
+      "a": 2
+    },
+    {
+      "id": 17,
+      "cat": "Royal Rumble",
+      "q": "Who became the first wrestler to win three men's Royal Rumble matches?",
+      "o": [
+        "Hulk Hogan",
+        "Shawn Michaels",
+        "Triple H",
+        "Stone Cold Steve Austin"
+      ],
+      "a": 3
+    },
+    {
+      "id": 18,
+      "cat": "Stipulation matches",
+      "q": "Which two wrestlers competed in the first Hell in a Cell match at Badd Blood 1997?",
+      "o": [
+        "Mankind and The Undertaker",
+        "Triple H and Shawn Michaels",
+        "The Undertaker and Shawn Michaels",
+        "Kane and Mankind"
+      ],
+      "a": 2
+    },
+    {
+      "id": 19,
+      "cat": "Stipulation matches",
+      "q": "Who won the first Hell in a Cell match?",
+      "o": [
+        "The Undertaker",
+        "Shawn Michaels",
+        "Mankind",
+        "Triple H"
+      ],
+      "a": 1
+    },
+    {
+      "id": 20,
+      "cat": "WrestleMania",
+      "q": "Who ended The Undertaker's undefeated WrestleMania streak?",
+      "o": [
+        "Roman Reigns",
+        "Triple H",
+        "CM Punk",
+        "Brock Lesnar"
+      ],
+      "a": 3
+    },
+    {
+      "id": 21,
+      "cat": "WrestleMania",
+      "q": "Which three wrestlers competed in the first women's WrestleMania main event?",
+      "o": [
+        "Becky Lynch, Charlotte Flair, and Ronda Rousey",
+        "Becky Lynch, Sasha Banks, and Ronda Rousey",
+        "Asuka, Charlotte Flair, and Ronda Rousey",
+        "Charlotte Flair, Bayley, and Becky Lynch"
+      ],
+      "a": 0
+    },
+    {
+      "id": 22,
+      "cat": "Money in the Bank",
+      "q": "Who became the first Women's Money in the Bank Ladder Match winner in 2017?",
+      "o": [
+        "Becky Lynch",
+        "Natalya",
+        "Charlotte Flair",
+        "Carmella"
+      ],
+      "a": 3
+    },
+    {
+      "id": 23,
+      "cat": "Stipulation matches",
+      "q": "Which three teams competed in the first official TLC match at SummerSlam 2000?",
+      "o": [
+        "The Hardy Boyz, The Dudley Boyz, and The APA",
+        "The Hardy Boyz, The Dudley Boyz, and Edge & Christian",
+        "Edge & Christian, The Hardy Boyz, and The New Age Outlaws",
+        "The Dudley Boyz, The Acolytes, and The Hardy Boyz"
+      ],
+      "a": 1
+    },
+    {
+      "id": 24,
+      "cat": "Stipulation matches",
+      "q": "Who won the first Elimination Chamber match at Survivor Series 2002?",
+      "o": [
+        "Triple H",
+        "Chris Jericho",
+        "Rob Van Dam",
+        "Shawn Michaels"
+      ],
+      "a": 3
+    },
+    {
+      "id": 25,
+      "cat": "WrestleMania",
+      "q": "Which two wrestlers competed in the famous ladder match for the Intercontinental Championship at WrestleMania X?",
+      "o": [
+        "Razor Ramon and Bret Hart",
+        "Diesel and Shawn Michaels",
+        "Razor Ramon and Shawn Michaels",
+        "Shawn Michaels and Marty Jannetty"
+      ],
+      "a": 2
+    },
+    {
+      "id": 26,
+      "cat": "Title history",
+      "q": "Who became the first wrestler to hold the WWE Championship and ECW Championship simultaneously?",
+      "o": [
+        "Edge",
+        "Rob Van Dam",
+        "Big Show",
+        "John Cena"
+      ],
+      "a": 1
+    },
+    {
+      "id": 27,
+      "cat": "Money in the Bank",
+      "q": "Against whom did Rob Van Dam cash in his Money in the Bank contract at ECW One Night Stand 2006?",
+      "o": [
+        "Edge",
+        "Rey Mysterio",
+        "John Cena",
+        "Randy Orton"
+      ],
+      "a": 2
+    },
+    {
+      "id": 28,
+      "cat": "Title history",
+      "q": "Who did Edge defeat to win his first WWE Championship in 2006?",
+      "o": [
+        "Triple H",
+        "Rob Van Dam",
+        "Randy Orton",
+        "John Cena"
+      ],
+      "a": 3
+    },
+    {
+      "id": 29,
+      "cat": "WrestleMania",
+      "q": "Who did Kofi Kingston defeat to win the WWE Championship at WrestleMania 35?",
+      "o": [
+        "Randy Orton",
+        "AJ Styles",
+        "Daniel Bryan",
+        "Samoa Joe"
+      ],
+      "a": 2
+    },
+    {
+      "id": 30,
+      "cat": "Money in the Bank",
+      "q": "Who became the first wrestler to win the men's Money in the Bank Ladder Match twice?",
+      "o": [
+        "Edge",
+        "Jeff Hardy",
+        "Christian",
+        "CM Punk"
+      ],
+      "a": 3
+    }
+  ],
+  "news": [
+    {
+      "id": 32,
+      "date": "2026-10-14T22:19:30.984Z",
+      "title": "OBA FEMI IS BEING CALLED OVERRATED AND OVERHYPED",
+      "body": "Oba Femi has been called overrated and overhyped by the IWC because of his recent victory over Bronson Reed. Oba took a brass knuckle punch and a tsunami and still kicked out leaving the IWC to wonder whether Oba Femi is being overpushed. The hate is going around.\nHe beat Brock Lesnar with one fall from grace and this makes fans think he is overrated.\nBut we all know he isn't overrated."
+    },
+    {
+      "id": 33,
+      "date": "2026-10-15T06:56:34.462Z",
+      "title": "OBA FEMI IS BEING CALLED OVERRATED AND OVERHYPED",
+      "body": "Oba Femi has been called overrated and overhyped by the IWC because of his recent victory over Bronson Reed. Oba took a brass knuckle punch and a tsunami and still kicked out leaving the IWC to wonder whether Oba Femi is being overpushed. The hate is going around.\nHe beat Brock Lesnar with one fall from grace and this makes fans think he is overrated.\nBut we all know he isn't overrated."
+    }
+  ]
+}
