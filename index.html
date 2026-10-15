@@ -239,6 +239,10 @@ select:focus,input[type=password]:focus{border-color:var(--gold);outline:none}
 .inst-text{flex:1;min-width:0}
 .inst-text b{display:block;font-family:var(--display);font-weight:400;font-size:19px;letter-spacing:.03em}
 .inst-text span{display:block;color:var(--steel);font-size:15px;line-height:1.35}
+
+.nimg{display:block;width:100%;max-height:360px;object-fit:cover;border-radius:10px;margin-bottom:12px;background:var(--ring)}
+.thumb{display:block;width:96px;height:64px;object-fit:cover;border-radius:6px;margin-top:8px}
+.prev img{display:block;max-width:100%;max-height:220px;border-radius:10px;margin:10px 0 8px}
 </style>
 </head>
 <body>
@@ -506,6 +510,10 @@ select:focus,input[type=password]:focus{border-color:var(--gold);outline:none}
       <form id="addn" novalidate class="agrid">
         <div><label class="f" for="an-t">Headline</label><input id="an-t" type="text" maxlength="120"></div>
         <div><label class="f" for="an-b">News</label><textarea id="an-b" maxlength="2000"></textarea></div>
+        <div><label class="f" for="an-img">Picture (optional)</label>
+          <input id="an-img" type="file" accept="image/*">
+          <p class="hint">Photos are shrunk automatically so the site stays fast. One clear picture per post works best.</p>
+          <div class="prev" id="an-prev" hidden><img id="an-prev-img" alt="Picture preview"><button class="mini" id="an-rm" type="button">Remove picture</button></div></div>
         <div class="row" style="margin-top:4px"><button class="btn" type="submit">Add news</button></div>
         <p class="msg" id="anmsg" role="status"></p>
       </form>
@@ -1211,12 +1219,17 @@ window.addEventListener("hashchange", route);
 function fmtDate(iso){
   try{ return new Date(iso).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}); }catch(e){ return ""; }
 }
+/* only allow real images (never script links) */
+function safeImg(src){
+  return typeof src==="string" && (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(src) || /^https:\/\/\S+$/.test(src));
+}
 function renderNews(){
   var list = $("newslist"); list.innerHTML = "";
   var items = (CONTENT.news||[]).slice().sort(function(a,b){ return b.id-a.id; });
   $("newsbox").hidden = items.length===0;
   items.forEach(function(n){
     var c = document.createElement("div"); c.className = "card";
+    if(safeImg(n.img)){ var im = document.createElement("img"); im.className = "nimg"; im.loading = "lazy"; im.alt = n.title; im.src = n.img; c.appendChild(im); }
     var h = document.createElement("h4"); h.textContent = n.title;
     var d = document.createElement("p"); d.className = "when"; d.textContent = fmtDate(n.date);
     var b = document.createElement("p"); b.className = "body"; b.textContent = n.body;
@@ -1539,7 +1552,9 @@ function renderAdmin(){
   st.textContent = same
     ? "Your list matches what's live on the site. " + draft.questions.length + " questions, " + draft.news.length + " news posts."
     : "You have changes that are NOT live yet. Download content.json and upload it to your site to publish them. (" + draft.questions.length + " questions, " + draft.news.length + " news posts.)";
-  st.classList.toggle("warn", !same);
+  var kb = Math.round(JSON.stringify(draft).length/1024);
+  if(kb>1500) st.textContent += " Heads up: content.json is " + kb + " KB. Too many pictures slow the site down, so consider deleting old news pictures.";
+  st.classList.toggle("warn", !same || kb>1500);
 
   /* category suggestions */
   var cats = {}; draft.questions.forEach(function(q){ cats[q.cat]=1; });
@@ -1577,7 +1592,9 @@ function renderAdmin(){
     top.appendChild(tg); top.appendChild(del);
     var t = document.createElement("p"); t.className = "aq"; t.textContent = n.title;
     var b = document.createElement("p"); b.className = "aa"; b.textContent = n.body;
-    row.appendChild(top); row.appendChild(t); row.appendChild(b); nl.appendChild(row);
+    row.appendChild(top); row.appendChild(t);
+    if(safeImg(n.img)){ var th = document.createElement("img"); th.className = "thumb"; th.alt = ""; th.src = n.img; row.appendChild(th); }
+    row.appendChild(b); nl.appendChild(row);
   });
 }
 
@@ -1597,14 +1614,49 @@ $("addq").addEventListener("submit", function(e){
   m.textContent = "Question added. Remember to download content.json when you're done."; m.classList.add("ok");
 });
 
+var newsImg = "";
+function clearNewsImg(){ newsImg = ""; $("an-prev").hidden = true; $("an-prev-img").removeAttribute("src"); $("an-img").value = ""; }
+function shrinkImage(file){
+  return new Promise(function(resolve, reject){
+    var rd = new FileReader();
+    rd.onerror = reject;
+    rd.onload = function(){
+      var im = new Image();
+      im.onerror = reject;
+      im.onload = function(){
+        var max = 900, sc = Math.min(1, max/Math.max(im.naturalWidth, im.naturalHeight));
+        var w = Math.max(1,Math.round(im.naturalWidth*sc)), h = Math.max(1,Math.round(im.naturalHeight*sc));
+        var c = document.createElement("canvas"); c.width = w; c.height = h;
+        var cx = c.getContext("2d"); cx.fillStyle = "#1A0B0F"; cx.fillRect(0,0,w,h); cx.drawImage(im,0,0,w,h);
+        resolve(c.toDataURL("image/jpeg", 0.72));
+      };
+      im.src = rd.result;
+    };
+    rd.readAsDataURL(file);
+  });
+}
+$("an-img").addEventListener("change", function(){
+  var f = this.files && this.files[0], m = $("anmsg"); m.className = "msg";
+  if(!f) return;
+  if(!/^image\//.test(f.type)){ m.textContent = "Please choose a picture file."; m.classList.add("err"); this.value = ""; return; }
+  m.textContent = "Preparing picture...";
+  shrinkImage(f).then(function(url){
+    newsImg = url; $("an-prev-img").src = url; $("an-prev").hidden = false;
+    m.textContent = "Picture ready (" + Math.round(url.length/1024) + " KB)."; m.classList.add("ok");
+  }).catch(function(){ clearNewsImg(); m.textContent = "That picture couldn't be read. Try another one."; m.classList.add("err"); });
+});
+$("an-rm").addEventListener("click", clearNewsImg);
+
 $("addn").addEventListener("submit", function(e){
   e.preventDefault();
   var m = $("anmsg"); m.className = "msg";
   var t = $("an-t").value.trim(), b = $("an-b").value.trim();
   if(!t || !b){ m.textContent = "Add a headline and the news text."; m.classList.add("err"); return; }
-  draft.news.push({id:draft.nextId++, date:new Date().toISOString(), title:t, body:b});
+  var item = {id:draft.nextId++, date:new Date().toISOString(), title:t, body:b};
+  if(newsImg) item.img = newsImg;
+  draft.news.push(item);
   saveDraft();
-  $("addn").reset();
+  $("addn").reset(); clearNewsImg();
   m.textContent = "News added. Remember to download content.json when you're done."; m.classList.add("ok");
 });
 
