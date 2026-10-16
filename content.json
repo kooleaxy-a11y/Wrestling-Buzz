@@ -363,52 +363,5 @@
     }
   ],
   "news": [],
-  "events": [
-    {
-      "id": 38,
-      "title": "FRIDAY NIGHT SMACKDOWN",
-      "closes": "2026-10-16T22:59:00.000Z",
-      "created": "2026-10-16T06:13:19.809Z",
-      "picks": [
-        {
-          "t": "match",
-          "q": "Paige Vs Nikki Bella",
-          "o": [
-            "Paige",
-            "Nikki Bella"
-          ],
-          "a": null
-        },
-        {
-          "t": "match",
-          "q": "Damian Priest Vs R-Truth",
-          "o": [
-            "Damian Priest",
-            "R-Truth"
-          ],
-          "a": null
-        },
-        {
-          "t": "bonus",
-          "q": "Will somebody interfere in a match?",
-          "o": [
-            "Yes",
-            "No"
-          ],
-          "a": null
-        },
-        {
-          "t": "bonus",
-          "q": "How will the main event end?",
-          "o": [
-            "Pinfall",
-            "Submission",
-            "DQ or no contest"
-          ],
-          "a": null
-        }
-      ],
-      "big": false
-    }
-  ]
+  "events": []
 }
