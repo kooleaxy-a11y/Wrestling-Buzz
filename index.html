@@ -7,6 +7,13 @@
 <meta name="description" content="Wrestling Buzz: the WWE quiz and trending news for our WhatsApp channel community.">
 <meta name="theme-color" content="#1A0B0F">
 <link rel="icon" type="image/png" href="icon-192.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Wrestling Buzz">
+<meta property="og:title" content="Wrestling Buzz: WWE quiz, predictions and news">
+<meta property="og:description" content="Test your WWE knowledge, predict Raw, SmackDown and premium events, and read the latest WWE news.">
+<meta property="og:image" content="https://lwrestlingbuzz.vercel.app/icon-512.png">
+<meta property="og:url" content="https://lwrestlingbuzz.vercel.app/">
+<meta name="twitter:card" content="summary">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -320,6 +327,16 @@ details.mod summary{cursor:pointer;font-weight:600}
 .wptr{position:absolute;left:50%;top:-10px;margin-left:-11px;z-index:2;border-left:11px solid transparent;border-right:11px solid transparent;border-top:22px solid var(--gold)}
 .spinres{margin-top:12px;font-weight:700;color:var(--gold)}
 @media (prefers-reduced-motion:reduce){ .wheel{transition:none} }
+.nshare{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.sbtn{display:inline-block;background:transparent;border:2px solid var(--line);color:var(--rope);border-radius:10px;padding:8px 14px;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none}
+.sbtn:hover{border-color:var(--rope)}
+.sbtn.wa{background:#1FA855;border-color:#1FA855;color:#fff}
+.sbtn.wa:hover{background:#27BE63;border-color:#27BE63}
+.card.flash{animation:flashb 2.4s ease-out}
+@keyframes flashb{0%,60%{box-shadow:0 0 0 3px var(--gold)}100%{box-shadow:0 0 0 3px transparent}}
+.pimg{display:block;width:100%;max-height:230px;object-fit:cover;border-radius:10px;margin:8px 0 6px;background:var(--ring)}
+.pickimg{display:block;width:100%;max-height:190px;object-fit:cover;border-radius:10px;margin:0 0 10px;background:var(--ring)}
+.respanel .thumb{width:140px;height:84px}
 </style>
 </head>
 <body>
@@ -501,7 +518,8 @@ details.mod summary{cursor:pointer;font-weight:600}
 <!-- ===================== TRENDING ===================== -->
 <section id="v-trending" class="view" aria-label="What's trending in WWE">
   <h2>What's trending in WWE</h2>
-  <div id="newsbox" hidden><h3 style="margin-top:22px">Latest from the Buzz team</h3><div id="newslist"></div></div>
+  <div id="newsbox" hidden><h3 style="margin-top:22px">Latest from the Buzz team</h3>
+    <p class="hint" style="margin:-2px 0 6px">Tap Share on a post to send it to your friends. You earn 5 XP for each post you share.</p><div id="newslist"></div></div>
   <p class="snap">Snapshot from 14 October 2026, based on official WWE results and event listings. Storylines move fast, so things can change.</p>
 
   <div class="headlines">
@@ -670,6 +688,10 @@ details.mod summary{cursor:pointer;font-weight:600}
         <div><label class="f" for="ae-x">Your own bonus questions (optional, one per line)</label>
           <textarea id="ae-x" style="min-height:90px" placeholder="Who gets the biggest cheer? | Reigns | Knight | Neither"></textarea>
           <p class="hint">Format: Question | Option 1 | Option 2 | ...</p></div>
+        <div><label class="f" for="ae-img">Show picture (optional)</label>
+          <input id="ae-img" type="file" accept="image/*">
+          <p class="hint">A card graphic or banner shown at the top. You can add a picture for each match after you add the show (tap Pictures).</p>
+          <div class="prev" id="ae-prev" hidden><img id="ae-prev-img" alt="Picture preview"><button class="mini" id="ae-rm" type="button">Remove picture</button></div></div>
         <label class="chk"><input type="checkbox" id="ae-big"> Big event (Crown Jewel, WrestleMania and other premium events). Pays double XP.</label>
         <div class="row" style="margin-top:4px"><button class="btn" type="submit">Add show</button></div>
         <p class="msg" id="aemsg" role="status"></p>
@@ -1151,7 +1173,7 @@ var BADGES = [
 var PROF_KEY = "wb_profile_v1";
 var rx = {ans:0, speed:0}, fastCorrect = 0, levelBefore = 1;
 
-function newProfile(){ return {xp:0, rounds:0, answered:0, correct:0, streak:0, bestStreak:0, lastPlay:"", lastPct:null, badges:{}, pred:{}, unlocked:{}, hit7:false, survBest:0, lastSpin:""}; }
+function newProfile(){ return {xp:0, rounds:0, answered:0, correct:0, streak:0, bestStreak:0, lastPlay:"", lastPct:null, badges:{}, pred:{}, unlocked:{}, hit7:false, survBest:0, lastSpin:"", shared:{}}; }
 function loadProfile(){
   var p = null, d = newProfile();
   try{ p = JSON.parse(store(PROF_KEY)||"null"); }catch(e){ p = null; }
@@ -1164,6 +1186,7 @@ function loadProfile(){
     if(p.hit7===true) d.hit7 = true;
     if(typeof p.survBest==="number" && p.survBest>=0) d.survBest = Math.floor(p.survBest);
     if(typeof p.lastSpin==="string") d.lastSpin = p.lastSpin.slice(0,10);
+    if(p.shared && typeof p.shared==="object"){ Object.keys(p.shared).forEach(function(k){ if(p.shared[k]===true) d.shared[k] = true; }); }
     if(p.unlocked && typeof p.unlocked==="object"){ Object.keys(p.unlocked).forEach(function(k){ if(typeof p.unlocked[k]==="string") d.unlocked[k] = p.unlocked[k].slice(0,10); }); }
     if(p.pred && typeof p.pred==="object"){
       Object.keys(p.pred).forEach(function(k){
@@ -1604,6 +1627,7 @@ var adminOpen = false;
 var VIEWS = ["quiz","predict","career","chat","trending","contact","admin"];
 function route(){
   var h = (location.hash||"#quiz").replace("#","");
+  if(h.indexOf("news-")===0) h = "trending";
   if(VIEWS.indexOf(h)<0) h="quiz";
   VIEWS.forEach(function(n){ $("v-"+n).classList.toggle("on", n===h); });
   document.querySelectorAll("[data-nav]").forEach(function(a){
@@ -1632,6 +1656,47 @@ window.addEventListener("hashchange", route);
 function fmtDate(iso){
   try{ return new Date(iso).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}); }catch(e){ return ""; }
 }
+/* ---------- sharing news ---------- */
+function newsUrl(n){ return location.origin + location.pathname + "#news-" + n.id; }
+function newsText(n){
+  var body = n.insider ? "Insiders-only story on Wrestling Buzz. Level up to read it."
+           : (n.body||"").replace(/\s+/g," ").trim().slice(0,140) + ((n.body||"").length>140 ? "..." : "");
+  return n.title + "\n\n" + body + "\n\nRead it on Wrestling Buzz:";
+}
+function rewardShare(id){
+  if(PROF.shared[id]) return;
+  PROF.shared[id] = true; PROF.xp += 5; saveProfile();
+  toast("+5 XP for sharing");
+  announceUnlocks();
+}
+function shareBar(n){
+  var bar = el("div","nshare"), url = newsUrl(n), text = newsText(n);
+  var wa = el("a","sbtn wa","Share on WhatsApp");
+  wa.href = "https://wa.me/?text=" + encodeURIComponent(text+" "+url); wa.target = "_blank"; wa.rel = "noopener";
+  wa.addEventListener("click", function(){ rewardShare(n.id); });
+  bar.appendChild(wa);
+  var other = el("button","sbtn", navigator.share ? "Share" : "Copy link"); other.type = "button";
+  other.addEventListener("click", function(){
+    if(navigator.share){
+      navigator.share({title:n.title, text:text, url:url}).then(function(){ rewardShare(n.id); }).catch(function(){});
+    } else {
+      var full = text+" "+url, done = function(){ other.textContent = "Link copied"; setTimeout(function(){ other.textContent = "Copy link"; }, 2200); rewardShare(n.id); };
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(full).then(done).catch(function(){ window.prompt("Copy this link:", full); }); }
+      else { window.prompt("Copy this link:", full); }
+    }
+  });
+  bar.appendChild(other);
+  return bar;
+}
+function focusNews(){
+  var h = location.hash || "";
+  if(h.indexOf("#news-")!==0) return;
+  setTimeout(function(){
+    var t = document.getElementById(h.slice(1));
+    if(t){ t.scrollIntoView({behavior:"smooth", block:"start"}); t.classList.add("flash"); setTimeout(function(){ t.classList.remove("flash"); }, 2400); }
+  }, 250);
+}
+
 /* only allow real images (never script links) */
 function safeImg(src){
   return typeof src==="string" && (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(src) || /^https:\/\/\S+$/.test(src));
@@ -1647,14 +1712,18 @@ function renderNews(){
       c.appendChild(el("h4","",n.title));
       c.appendChild(el("p","when",fmtDate(n.date)));
       c.appendChild(lockCard("insiders"));
+      c.id = "news-"+n.id; c.appendChild(shareBar(n));
       list.appendChild(c); return;
     }
     if(safeImg(n.img)){ var im = document.createElement("img"); im.className = "nimg"; im.loading = "lazy"; im.alt = n.title; im.src = n.img; c.appendChild(im); }
     var h = document.createElement("h4"); h.textContent = n.title;
     var d = document.createElement("p"); d.className = "when"; d.textContent = fmtDate(n.date);
     var b = document.createElement("p"); b.className = "body"; b.textContent = n.body;
-    c.appendChild(h); c.appendChild(d); c.appendChild(b); list.appendChild(c);
+    c.appendChild(h); c.appendChild(d); c.appendChild(b);
+    c.id = "news-"+n.id; c.appendChild(shareBar(n));
+    list.appendChild(c);
   });
+  focusNews();
 }
 
 /* =====================================================================
@@ -2048,7 +2117,7 @@ $("addq").addEventListener("submit", function(e){
 
 var newsImg = "";
 function clearNewsImg(){ newsImg = ""; $("an-prev").hidden = true; $("an-prev-img").removeAttribute("src"); $("an-img").value = ""; }
-function shrinkImage(file){
+function shrinkImage(file, maxDim, quality){
   return new Promise(function(resolve, reject){
     var rd = new FileReader();
     rd.onerror = reject;
@@ -2056,11 +2125,11 @@ function shrinkImage(file){
       var im = new Image();
       im.onerror = reject;
       im.onload = function(){
-        var max = 900, sc = Math.min(1, max/Math.max(im.naturalWidth, im.naturalHeight));
+        var max = maxDim || 900, sc = Math.min(1, max/Math.max(im.naturalWidth, im.naturalHeight));
         var w = Math.max(1,Math.round(im.naturalWidth*sc)), h = Math.max(1,Math.round(im.naturalHeight*sc));
         var c = document.createElement("canvas"); c.width = w; c.height = h;
         var cx = c.getContext("2d"); cx.fillStyle = "#1A0B0F"; cx.fillRect(0,0,w,h); cx.drawImage(im,0,0,w,h);
-        resolve(c.toDataURL("image/jpeg", 0.72));
+        resolve(c.toDataURL("image/jpeg", quality || 0.72));
       };
       im.src = rd.result;
     };
@@ -2248,6 +2317,7 @@ function renderPredict(){
     var st = evState(ev), mine = getPicks(ev.id) || [];
     var card = el("div","card ev");
     card.appendChild(el("h4","",ev.title));
+    if(safeImg(ev.img)){ var bi = el("img","pimg"); bi.src = ev.img; bi.alt = ev.title; bi.loading = "lazy"; card.appendChild(bi); }
     if(ev.big) card.appendChild(el("p","bigtag","BIG EVENT: DOUBLE XP"));
     var status = el("p","pstat");
     if(st==="open"){
@@ -2274,6 +2344,7 @@ function renderPredict(){
 
     ev.picks.forEach(function(p,i){
       card.appendChild(el("p","pq",p.q));
+      if(safeImg(p.img)){ var mi = el("img","pickimg"); mi.src = p.img; mi.alt = p.q; mi.loading = "lazy"; card.appendChild(mi); }
       var opts = el("div","popts");
       p.o.forEach(function(o,k){
         var b = el("button","popt",o); b.type = "button";
@@ -2334,7 +2405,7 @@ function tickPredict(){
 }
 
 /* ---------------- admin: shows ---------------- */
-var openResultsId = null, openTimeId = null;
+var openResultsId = null, openTimeId = null, openPicsId = null;
 
 (function(){
   var box = $("ae-bonus");
@@ -2345,6 +2416,20 @@ var openResultsId = null, openTimeId = null;
     box.appendChild(lab);
   });
 })();
+
+var eventImg = "";
+function clearEventImg(){ eventImg = ""; $("ae-prev").hidden = true; $("ae-prev-img").removeAttribute("src"); $("ae-img").value = ""; }
+$("ae-img").addEventListener("change", function(){
+  var f = this.files && this.files[0], m = $("aemsg"); m.className = "msg";
+  if(!f) return;
+  if(!/^image\//.test(f.type)){ m.textContent = "Please choose a picture file."; m.classList.add("err"); this.value = ""; return; }
+  m.textContent = "Preparing picture...";
+  shrinkImage(f, 900, 0.72).then(function(url){
+    eventImg = url; $("ae-prev-img").src = url; $("ae-prev").hidden = false;
+    m.textContent = "Picture ready (" + Math.round(url.length/1024) + " KB)."; m.classList.add("ok");
+  }).catch(function(){ clearEventImg(); m.textContent = "That picture couldn't be read. Try another one."; m.classList.add("err"); });
+});
+$("ae-rm").addEventListener("click", clearEventImg);
 
 $("adde").addEventListener("submit", function(e){
   e.preventDefault();
@@ -2376,9 +2461,11 @@ $("adde").addEventListener("submit", function(e){
   if(picks.length>14) return bad("That's a lot of picks. Keep it to 14 or fewer.");
 
   draft.events = draft.events || [];
-  draft.events.push({id:draft.nextId++, title:title, closes:closes.toISOString(), created:new Date().toISOString(), picks:picks, big:$("ae-big").checked});
+  var newEv = {id:draft.nextId++, title:title, closes:closes.toISOString(), created:new Date().toISOString(), picks:picks, big:$("ae-big").checked};
+  if(eventImg) newEv.img = eventImg;
+  draft.events.push(newEv);
   saveDraft();
-  $("adde").reset();
+  $("adde").reset(); clearEventImg();
   m.textContent = "Show added. Remember to download content.json when you're done."; m.classList.add("ok");
 });
 
@@ -2411,6 +2498,9 @@ function renderAdminEvents(){
     var ct = small(openTimeId===ev.id ? "Hide time" : "Change close time");
     ct.addEventListener("click", function(){ openTimeId = (openTimeId===ev.id) ? null : ev.id; renderAdminEvents(); });
     acts.appendChild(ct);
+    var pc = small(openPicsId===ev.id ? "Hide pictures" : "Pictures");
+    pc.addEventListener("click", function(){ openPicsId = (openPicsId===ev.id) ? null : ev.id; renderAdminEvents(); });
+    acts.appendChild(pc);
     var rs = small(openResultsId===ev.id ? "Hide results" : "Set results");
     rs.addEventListener("click", function(){ openResultsId = (openResultsId===ev.id) ? null : ev.id; renderAdminEvents(); });
     acts.appendChild(rs);
@@ -2427,6 +2517,33 @@ function renderAdminEvents(){
         ev.closes = d.toISOString(); openTimeId = null; saveDraft();
       });
       tp.appendChild(ts); row.appendChild(tp);
+    }
+
+    if(openPicsId===ev.id){
+      var pp = el("div","respanel"), pm = el("p","msg","");
+      var picRow = function(label, getImg, setImg){
+        pp.appendChild(el("p","pq",label));
+        var cur = getImg();
+        if(safeImg(cur)){ var th = el("img","thumb"); th.src = cur; th.alt = ""; pp.appendChild(th); }
+        var fi = document.createElement("input"); fi.type = "file"; fi.accept = "image/*";
+        fi.addEventListener("change", function(){
+          var f = fi.files && fi.files[0]; if(!f) return;
+          pm.className = "msg"; pm.textContent = "Preparing picture...";
+          shrinkImage(f, 800, 0.7).then(function(url){ setImg(url); saveDraft(); })
+            .catch(function(){ pm.textContent = "That picture couldn't be read."; pm.classList.add("err"); });
+        });
+        pp.appendChild(fi);
+        if(safeImg(cur)){
+          var rm = el("button","mini","Remove picture"); rm.type = "button"; rm.style.marginTop = "6px";
+          rm.addEventListener("click", function(){ setImg(""); saveDraft(); });
+          pp.appendChild(rm);
+        }
+      };
+      picRow("Show picture (top of the card)", function(){ return ev.img; }, function(u){ if(u) ev.img = u; else delete ev.img; });
+      ev.picks.forEach(function(p){ picRow(p.q, function(){ return p.img; }, function(u){ if(u) p.img = u; else delete p.img; }); });
+      pp.appendChild(pm);
+      pp.appendChild(el("p","hint","Pictures are shrunk automatically. Only use pictures you own or have permission to use."));
+      row.appendChild(pp);
     }
 
     if(openResultsId===ev.id){
