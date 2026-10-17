@@ -2640,7 +2640,7 @@ var CHAT_BLOCKED = ["fuck","shit","bitch","asshole","bastard","dickhead","pussy"
 var CHAT_CID_KEY = "wb_cid_v1", CHAT_MINE_KEY = "wb_chat_mine_v1", CHAT_REPORTED_KEY = "wb_chat_reported_v1", CHAT_SEEN_KEY = "wb_chat_unlocked_seen", MOD_KEY = "wb_mod_token";
 var chatTimer = 0, chatSig = "", chatBusy = false, lastSend = 0;
 
-var CHAT_ENABLED = false;   /* set to true when you want the Locker Room chat to appear */
+var CHAT_ENABLED = true;    /* set to false to hide the Locker Room chat */
 function chatConfigured(){ return CHAT_ENABLED && !!(SUPABASE_URL && SUPABASE_KEY); }
 function chatUnlocked(){ return levelFor(PROF.xp).n >= CHAT_LEVEL; }
 function myId(){
