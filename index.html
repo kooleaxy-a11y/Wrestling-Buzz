@@ -661,6 +661,13 @@ details.mod summary{cursor:pointer;font-weight:600}
     </div>
 
     <div class="panel apanel">
+      <h3 style="margin-top:0">Import many questions at once</h3>
+      <p class="hint" style="margin:-4px 0 10px">Choose a questions file (.json) prepared for you. New questions are added to the list. Any question already in the list is skipped.</p>
+      <input id="imp-q" type="file" accept="application/json,.json">
+      <p class="msg" id="impmsg" role="status"></p>
+    </div>
+
+    <div class="panel apanel">
       <h3 style="margin-top:0">Add news</h3>
       <p class="hint" style="margin:-4px 0 10px">News shows at the top of the Trending page.</p>
       <form id="addn" novalidate class="agrid">
@@ -2756,6 +2763,38 @@ $("mod-out").addEventListener("click", function(){
   modUI(); chatSig = ""; loadMessages();
 });
 
+
+/* ---------- bulk import of questions ---------- */
+$("imp-q").addEventListener("change", function(){
+  var f = this.files && this.files[0], m = $("impmsg"), input = this; m.className = "msg";
+  if(!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    try{
+      var j = JSON.parse(rd.result);
+      var list = Array.isArray(j) ? j : (j && Array.isArray(j.questions) ? j.questions : null);
+      if(!list) throw new Error("shape");
+      var have = {}; draft.questions.forEach(function(q){ have[q.q.trim().toLowerCase()] = true; });
+      var added = 0, dup = 0, bad = 0;
+      list.forEach(function(x){
+        var ok = x && typeof x.cat==="string" && x.cat.trim() && typeof x.q==="string" && x.q.trim() && Array.isArray(x.o) && x.o.length===4 &&
+                 x.o.every(function(o){ return typeof o==="string" && o.trim(); }) && Number.isInteger(x.a) && x.a>=0 && x.a<4;
+        if(ok){ var low = x.o.map(function(o){ return o.trim().toLowerCase(); }); ok = low.every(function(o,i){ return low.indexOf(o)===i; }); }
+        if(!ok){ bad++; return; }
+        var key = x.q.trim().toLowerCase();
+        if(have[key]){ dup++; return; }
+        have[key] = true;
+        draft.questions.push({id:draft.nextId++, cat:x.cat.trim().slice(0,40), q:x.q.trim().slice(0,400), o:x.o.map(function(o){ return o.trim().slice(0,120); }), a:x.a});
+        added++;
+      });
+      saveDraft();
+      m.textContent = "Added "+added+" question"+(added===1?"":"s")+". Skipped "+dup+" already in the list"+(bad? " and "+bad+" that were not valid" : "")+". Now download content.json below.";
+      m.classList.add(added>0 ? "ok" : "err");
+    }catch(err){ m.textContent = "That file isn't a valid questions file."; m.classList.add("err"); }
+    input.value = "";
+  };
+  rd.readAsText(f);
+});
 
 /* the Chat tab stays hidden until the chat is set up (SUPABASE_URL and SUPABASE_KEY above) */
 if(!chatConfigured()){ var chatTab = document.querySelector('[data-nav="chat"]'); if(chatTab) chatTab.hidden = true; }
