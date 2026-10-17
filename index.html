@@ -337,6 +337,18 @@ details.mod summary{cursor:pointer;font-weight:600}
 .pimg{display:block;width:100%;max-height:230px;object-fit:cover;border-radius:10px;margin:8px 0 6px;background:var(--ring)}
 .pickimg{display:block;width:100%;max-height:190px;object-fit:cover;border-radius:10px;margin:0 0 10px;background:var(--ring)}
 .respanel .thumb{width:140px;height:84px}
+.stgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stcard{background:var(--ring);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.stcard b{display:block;font-family:var(--display);font-weight:400;font-size:28px;color:var(--gold)}
+.stcard.big b{font-size:44px;color:var(--good)}
+.stcard span{font-size:14px;color:var(--steel)}
+.sth{font-family:var(--display);font-weight:400;font-size:19px;letter-spacing:.03em;margin:20px 0 8px}
+.sbars{display:flex;align-items:flex-end;gap:4px;height:150px;background:var(--ring);border:1px solid var(--line);border-radius:12px;padding:20px 8px 22px}
+.sbar{position:relative;flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-width:0}
+.sbar i{display:block;width:100%;background:linear-gradient(0deg,var(--crimson),var(--gold));border-radius:4px 4px 0 0}
+.sbar em{font-style:normal;font-size:11px;color:var(--steel);margin-bottom:2px}
+.sbar span{position:absolute;bottom:-18px;font-size:10px;color:var(--steel);white-space:nowrap}
+.stips p{margin-top:8px;color:var(--steel);font-size:15px}
 </style>
 </head>
 <body>
@@ -638,6 +650,33 @@ details.mod summary{cursor:pointer;font-weight:600}
       <button class="btn ghost" id="alogout" type="button" style="padding:8px 18px;min-height:0;font-size:18px">Log out</button>
     </div>
     <p class="snap" id="astatus" style="margin-top:14px"></p>
+
+    <div class="panel apanel" id="stats-panel">
+      <h3 style="margin-top:0">Live site stats</h3>
+      <div id="stats-off" hidden>
+        <p class="hint">Live stats aren't switched on yet. They need the free Supabase connection (see supabase-setup.sql). Once it's connected, you'll see who is online and how many people use the site, right here.</p>
+      </div>
+      <form id="stats-login" hidden novalidate class="agrid">
+        <p class="hint">Sign in with your Supabase admin email to see the stats.</p>
+        <input id="st-email" type="text" placeholder="Admin email" autocomplete="username" aria-label="Admin email">
+        <input id="st-pw" type="password" placeholder="Password" autocomplete="current-password" aria-label="Password">
+        <div class="row" style="margin-top:0"><button class="btn" type="submit" style="padding:10px 20px;min-height:0;font-size:18px">Show stats</button></div>
+      </form>
+      <div id="stats-body" hidden>
+        <div class="stgrid" id="stats-grid"></div>
+        <h4 class="sth">Where people are right now</h4>
+        <div class="xprows" id="stats-where"></div>
+        <h4 class="sth">Users per day (last 14 days)</h4>
+        <div id="stats-daily"></div>
+        <h4 class="sth">Players by level</h4>
+        <div id="stats-levels"></div>
+        <h4 class="sth">What this tells you</h4>
+        <div id="stats-tips" class="stips"></div>
+        <p class="hint" id="stats-time"></p>
+        <button class="mini" id="stats-out" type="button">Sign out of stats</button>
+      </div>
+      <p class="msg" id="stats-msg" role="status"></p>
+    </div>
 
     <div class="panel apanel">
       <h3 style="margin-top:0">Add a question</h3>
@@ -1646,6 +1685,7 @@ function route(){
   if(h!=="quiz") stopTimer();
   if(adminOpen) showAdminGate();
   clearInterval(chatTimer); chatTimer = 0;
+  clearInterval(statsTimer); statsTimer = 0;
   if(h==="career"){ renderCareer(); renderSections(); }
   if(h==="chat") renderChat();
   if(h==="trending") renderNews();
@@ -2021,8 +2061,8 @@ function sha256hex(str){
 function adminAuthed(){ try{ return sessionStorage.getItem(SESSION_KEY)==="1"; }catch(e){ return false; } }
 
 function showAdminGate(){
-  if(adminAuthed()){ $("a-login").hidden = true; $("a-panel").hidden = false; loadAdmin(); }
-  else { $("a-login").hidden = false; $("a-panel").hidden = true; $("apw").value = ""; $("amsg").textContent = ""; }
+  if(adminAuthed()){ $("a-login").hidden = true; $("a-panel").hidden = false; loadAdmin(); renderStats(); }
+  else { $("a-login").hidden = false; $("a-panel").hidden = true; $("apw").value = ""; $("amsg").textContent = ""; clearInterval(statsTimer); statsTimer = 0; }
 }
 
 $("aform").addEventListener("submit", function(e){
@@ -2592,15 +2632,16 @@ function renderAdminEvents(){
    Chat needs a free Supabase project. Paste its address and public key below (see supabase-setup.sql and the steps).
    Leave both empty and the chat page just says it isn't open yet.
    ===================================================================== */
-var SUPABASE_URL = "";   /* e.g. "https://abcdxyz.supabase.co" */
-var SUPABASE_KEY = "";   /* the "anon public" key. It is meant to be public. NEVER paste the service_role key. */
+var SUPABASE_URL = "https://sheoflmhrduorwwkpfup.supabase.co";   /* e.g. "https://abcdxyz.supabase.co" */
+var SUPABASE_KEY = "sb_publishable_is9jpm6XhpDuOlwwPFqU7A_CvSuhdLj";   /* the "anon public" key. It is meant to be public. NEVER paste the service_role key. */
 var CHAT_LEVEL = 3;      /* level needed to unlock the Locker Room */
 var CHAT_POLL_MS = 4000;
 var CHAT_BLOCKED = ["fuck","shit","bitch","asshole","bastard","dickhead","pussy","cunt","whore","slut"];   /* add more words here */
 var CHAT_CID_KEY = "wb_cid_v1", CHAT_MINE_KEY = "wb_chat_mine_v1", CHAT_REPORTED_KEY = "wb_chat_reported_v1", CHAT_SEEN_KEY = "wb_chat_unlocked_seen", MOD_KEY = "wb_mod_token";
 var chatTimer = 0, chatSig = "", chatBusy = false, lastSend = 0;
 
-function chatConfigured(){ return !!(SUPABASE_URL && SUPABASE_KEY); }
+var CHAT_ENABLED = false;   /* set to true when you want the Locker Room chat to appear */
+function chatConfigured(){ return CHAT_ENABLED && !!(SUPABASE_URL && SUPABASE_KEY); }
 function chatUnlocked(){ return levelFor(PROF.xp).n >= CHAT_LEVEL; }
 function myId(){
   var v = store(CHAT_CID_KEY);
@@ -2617,7 +2658,8 @@ function modToken(){
   return "";
 }
 function sbHead(extra){
-  var h = {"apikey":SUPABASE_KEY, "Authorization":"Bearer "+(modToken()||SUPABASE_KEY), "Content-Type":"application/json"};
+  var h = {"apikey":SUPABASE_KEY, "Content-Type":"application/json"};
+  var tok = modToken(); if(tok) h["Authorization"] = "Bearer "+tok;
   if(extra) Object.keys(extra).forEach(function(k){ h[k] = extra[k]; });
   return h;
 }
@@ -2795,6 +2837,130 @@ $("imp-q").addEventListener("change", function(){
   };
   rd.readAsText(f);
 });
+
+/* =====================================================================
+   LIVE SITE STATS (who is online, total users, daily users)
+   Needs the same free Supabase project as the chat. Visitors are counted anonymously with a random ID.
+   No names, emails or phone numbers are stored.
+   ===================================================================== */
+var statsTimer = 0, lastPing = 0, lastPingPage = "";
+var PAGE_LABELS = {quiz:"Quiz", predict:"Predict", career:"Career", chat:"Chat", trending:"Trending", contact:"Message us", admin:"Admin"};
+
+function statsConfigured(){ return !!(SUPABASE_URL && SUPABASE_KEY); }
+function currentView(){
+  var h = (location.hash||"#quiz").replace("#","");
+  if(h.indexOf("news-")===0) h = "trending";
+  return VIEWS.indexOf(h)<0 ? "quiz" : h;
+}
+function pingStats(force){
+  if(!statsConfigured() || document.hidden) return;
+  var page = currentView();
+  if(page==="admin") return;                                  /* admins browsing the admin area are not counted */
+  var now = Date.now();
+  if(!force && page===lastPingPage && now-lastPing<25000) return;
+  lastPing = now; lastPingPage = page;
+  try{
+    fetch(SUPABASE_URL+"/rest/v1/rpc/ping", {method:"POST", headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({p_id:myId(), p_page:page, p_lvl:levelFor(PROF.xp).n, p_rounds:PROF.rounds, p_app:isStandalone()})}).catch(function(){});
+  }catch(e){}
+}
+if(statsConfigured()){
+  var fw = document.querySelector("footer .wrap"), fa = fw && fw.querySelector(".admin-foot");
+  if(fw && fa) fw.insertBefore(document.createTextNode(" We count anonymous visits to improve the site. "), fa);
+  pingStats(true);
+  setInterval(function(){ pingStats(false); }, 30000);
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden) pingStats(true); });
+  window.addEventListener("hashchange", function(){ pingStats(false); });
+}
+
+/* ---------------- admin panel ---------------- */
+function statCard(label, value, big){
+  var d = el("div","stcard"+(big?" big":""));
+  d.appendChild(el("b","",String(value))); d.appendChild(el("span","",label));
+  return d;
+}
+function bars(items, labelFn){
+  var wrap = el("div","sbars"), max = Math.max.apply(null, items.map(function(x){ return x.v; }).concat([1]));
+  items.forEach(function(x,i){
+    var col = el("div","sbar"); col.title = labelFn(x);
+    var fill = el("i"); fill.style.height = Math.max(3, Math.round(x.v/max*100))+"%";
+    col.appendChild(el("em","",String(x.v))); col.appendChild(fill); col.appendChild(el("span","",(items.length>8 && i%2===1) ? "" : x.l));
+    wrap.appendChild(col);
+  });
+  return wrap;
+}
+function pct(a,b){ return b ? Math.round(a/b*100) : 0; }
+
+function renderStats(){
+  var off = $("stats-off"), login = $("stats-login"), body = $("stats-body"), msg = $("stats-msg");
+  clearInterval(statsTimer); statsTimer = 0;
+  msg.className = "msg"; msg.textContent = "";
+  off.hidden = statsConfigured(); login.hidden = true; body.hidden = true;
+  if(!statsConfigured()) return;
+  if(!modToken()){ login.hidden = false; return; }
+  body.hidden = false;
+  loadStats();
+  statsTimer = setInterval(loadStats, 15000);
+}
+function loadStats(){
+  fetch(SUPABASE_URL+"/rest/v1/rpc/admin_stats", {method:"POST", headers:sbHead(), body:"{}"})
+    .then(function(r){
+      if(r.status===401 || r.status===403){ try{ sessionStorage.removeItem(MOD_KEY); }catch(e){} renderStats(); throw new Error("auth"); }
+      if(!r.ok) throw new Error("bad");
+      return r.json();
+    })
+    .then(drawStats)
+    .catch(function(err){ if(err.message!=="auth"){ var m = $("stats-msg"); m.className = "msg err"; m.textContent = "Couldn't load the stats. Trying again..."; } });
+}
+function drawStats(st){
+  $("stats-msg").textContent = ""; $("stats-msg").className = "msg";
+  var box = $("stats-grid"); box.innerHTML = "";
+  box.appendChild(statCard("Online now", st.online_now, true));
+  box.appendChild(statCard("Total users", st.total, true));
+  box.appendChild(statCard("Active today", st.active_today));
+  box.appendChild(statCard("New today", st.new_today));
+  box.appendChild(statCard("Active last 7 days", st.active_7d));
+  box.appendChild(statCard("Came back later", st.returning));
+  box.appendChild(statCard("Played a quiz round", st.played));
+  box.appendChild(statCard("Installed the app", st.app_users));
+
+  var where = $("stats-where"); where.innerHTML = "";
+  var pages = Object.keys(st.online_by_page||{}).map(function(k){ return {k:k, v:st.online_by_page[k]}; }).sort(function(a,b){ return b.v-a.v; });
+  if(!pages.length) where.appendChild(el("p","hint","Nobody is online right now."));
+  pages.forEach(function(x){ var r = el("div","xprow"); r.appendChild(el("span","",PAGE_LABELS[x.k]||x.k)); r.appendChild(el("b","",String(x.v))); where.appendChild(r); });
+
+  var daily = $("stats-daily"); daily.innerHTML = "";
+  var dl = (st.daily||[]).map(function(d){ return {v:d.users, l:String(d.day).slice(5), day:d.day}; });
+  if(dl.length) daily.appendChild(bars(dl, function(x){ return x.day+": "+x.v+" users"; })); else daily.appendChild(el("p","hint","No activity recorded yet."));
+
+  var lv = $("stats-levels"); lv.innerHTML = "";
+  var ll = []; for(var i=1;i<=10;i++){ ll.push({v:(st.by_level&&st.by_level[i])||0, l:String(i)}); }
+  lv.appendChild(bars(ll, function(x){ return "Level "+x.l+": "+x.v+" users"; }));
+
+  var tips = $("stats-tips"); tips.innerHTML = "";
+  if(st.total>0){
+    tips.appendChild(el("p","","About "+pct(st.played, st.total)+"% of visitors finished a quiz round. "+(pct(st.played,st.total)<50 ? "Many leave before playing, so the start screen may need to be simpler." : "That's a healthy share.")));
+    tips.appendChild(el("p","","About "+pct(st.returning, st.total)+"% came back on another day. "+(pct(st.returning,st.total)<30 ? "More daily reasons to return (new questions, new shows, news) would help." : "People are coming back.")));
+    tips.appendChild(el("p","","About "+pct(st.app_users, st.total)+"% installed the app."));
+  }
+  $("stats-time").textContent = "Updated "+new Date().toLocaleTimeString();
+}
+
+$("stats-login").addEventListener("submit", function(e){
+  e.preventDefault();
+  var m = $("stats-msg"); m.className = "msg"; m.textContent = "Signing in...";
+  fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password", {method:"POST", headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
+        body:JSON.stringify({email:$("st-email").value.trim(), password:$("st-pw").value})})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(j && j.access_token){
+        try{ sessionStorage.setItem(MOD_KEY, JSON.stringify({token:j.access_token, exp:Date.now()+((j.expires_in||3600)*1000)-60000})); }catch(err){}
+        $("st-pw").value = ""; renderStats();
+      } else { m.textContent = "Wrong email or password."; m.classList.add("err"); }
+    })
+    .catch(function(){ m.textContent = "Couldn't sign in. Try again."; m.classList.add("err"); });
+});
+$("stats-out").addEventListener("click", function(){ try{ sessionStorage.removeItem(MOD_KEY); }catch(e){} renderStats(); });
 
 /* the Chat tab stays hidden until the chat is set up (SUPABASE_URL and SUPABASE_KEY above) */
 if(!chatConfigured()){ var chatTab = document.querySelector('[data-nav="chat"]'); if(chatTab) chatTab.hidden = true; }
