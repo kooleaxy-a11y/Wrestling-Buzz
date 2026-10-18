@@ -357,6 +357,20 @@ details.mod summary{cursor:pointer;font-weight:600}
 .mus[aria-pressed="true"]{border-color:var(--crimson)}
 .mus svg{width:20px;height:20px;flex:none}
 .np{margin-top:6px;font-size:13px;color:var(--steel)}
+.lbtabs{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 4px}
+.lbtabs button{background:var(--ring);border:2px solid var(--line);color:var(--rope);border-radius:999px;padding:8px 14px;font-weight:700;font-size:15px;cursor:pointer}
+.lbtabs button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#241005}
+.lblist{background:var(--ring);border:1px solid var(--line);border-radius:12px;margin-top:8px;overflow:hidden}
+.lbrow{display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid var(--line)}
+.lbrow:last-child{border-bottom:0}
+.lbrow.me{background:rgba(224,27,50,.14)}
+.lbrank{font-family:var(--display);font-size:22px;width:34px;color:var(--gold);text-align:center}
+.lbrow:nth-child(1) .lbrank{color:#FFD76A}
+.lbname{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:600}
+.lbyou{font-style:normal;color:var(--crimson);font-size:13px;font-weight:800}
+.lblv{font-size:13px;color:var(--steel);white-space:nowrap}
+.lbscore{font-family:var(--display);font-weight:400;font-size:22px;min-width:44px;text-align:right}
+.lblist .hint{padding:14px}
 </style>
 </head>
 <body>
@@ -368,6 +382,7 @@ details.mod summary{cursor:pointer;font-weight:600}
       <a href="#quiz" data-nav="quiz">Quiz</a>
       <a href="#predict" data-nav="predict">Predict</a>
       <a href="#career" data-nav="career">Career</a>
+      <a href="#ranks" data-nav="ranks">Ranks</a>
       <a href="#chat" data-nav="chat">Chat</a>
       <a href="#trending" data-nav="trending">Trending</a>
       <a href="#contact" data-nav="contact">Message</a>
@@ -532,6 +547,36 @@ details.mod summary{cursor:pointer;font-weight:600}
       <button class="btn ghost" id="mod-out" type="button" hidden style="padding:10px 20px;min-height:0;font-size:18px;margin-top:10px">Sign out</button>
       <p class="msg" id="mod-msg" role="status"></p>
     </details>
+  </div>
+</section>
+
+<!-- ===================== LEADERBOARD ===================== -->
+<section id="v-ranks" class="view" aria-label="Leaderboard">
+  <h2>Leaderboard</h2>
+  <p class="lead">The top Wrestling Buzz players. The weekly board resets every Monday.</p>
+  <div class="panel" id="lb-off" hidden><p>The leaderboard isn't open yet. Check back soon.</p></div>
+  <div id="lb-main" hidden>
+    <div class="panel" id="lb-join">
+      <div id="lb-in" hidden>
+        <p>You're on the board as <b id="lb-name"></b>.</p>
+        <button class="mini" id="lb-leave" type="button" style="margin-top:8px">Leave leaderboard</button>
+      </div>
+      <form id="lb-form" novalidate>
+        <label class="f" for="lb-nm">Name to show on the board</label>
+        <input id="lb-nm" type="text" maxlength="24" autocomplete="nickname" placeholder="Your ring name">
+        <p class="hint">Only your name, level and score are shown. You can leave any time.</p>
+        <div class="row" style="margin-top:12px"><button class="btn" type="submit" style="padding:10px 22px;min-height:0;font-size:19px">Join the leaderboard</button></div>
+      </form>
+    </div>
+    <div class="lbtabs" id="lb-tabs" role="group" aria-label="Choose a leaderboard">
+      <button type="button" data-kind="week" aria-pressed="true">This week</button>
+      <button type="button" data-kind="all" aria-pressed="false">All time</button>
+      <button type="button" data-kind="survival" aria-pressed="false">Survival</button>
+      <button type="button" data-kind="predict" aria-pressed="false">Predictions</button>
+    </div>
+    <p class="stripinfo" id="lb-me"></p>
+    <div class="lblist" id="lb-list"></div>
+    <p class="msg" id="lb-msg" role="status"></p>
   </div>
 </section>
 
@@ -700,6 +745,17 @@ details.mod summary{cursor:pointer;font-weight:600}
         </form>
         <p class="msg" id="mu-msg" role="status"></p>
         <div id="mu-list"></div>
+      </div>
+    </div>
+
+    <div class="panel apanel" id="lbadm-panel" hidden>
+      <h3 style="margin-top:0">Leaderboard moderation</h3>
+      <p class="hint" style="margin:-4px 0 10px">Remove players with rude names or scores that look fake. Removed players can't rejoin until you restore them.</p>
+      <div id="lbadm-gate" hidden><p class="hint">Sign in under <b>Live site stats</b> first, then come back here.</p></div>
+      <div id="lbadm-body" hidden>
+        <button class="mini" id="lbadm-refresh" type="button">Refresh</button>
+        <div id="lbadm-list"></div>
+        <p class="msg" id="lbadm-msg" role="status"></p>
       </div>
     </div>
 
@@ -1277,7 +1333,7 @@ function loadProfile(){
   return d;
 }
 var PROF = loadProfile();
-function saveProfile(){ store(PROF_KEY, JSON.stringify(PROF)); }
+function saveProfile(){ store(PROF_KEY, JSON.stringify(PROF)); scheduleScoreSubmit(); }
 
 function levelFor(xp){ var L = LEVELS[0]; LEVELS.forEach(function(l){ if(xp>=l.xp) L = l; }); return L; }
 function nextLevel(l){ return LEVELS[l.n] || null; }
@@ -1700,7 +1756,7 @@ try{
    ROUTER
    ===================================================================== */
 var adminOpen = false;
-var VIEWS = ["quiz","predict","career","chat","trending","contact","admin"];
+var VIEWS = ["quiz","predict","career","ranks","chat","trending","contact","admin"];
 function route(){
   var h = (location.hash||"#quiz").replace("#","");
   if(h.indexOf("news-")===0) h = "trending";
@@ -1709,13 +1765,15 @@ function route(){
   document.querySelectorAll("[data-nav]").forEach(function(a){
     if(a.getAttribute("data-nav")===h) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current");
   });
-  var names = {quiz:"WWE Quiz", predict:"Predict", career:"Your career", chat:"Locker Room", trending:"Trending", contact:"Message us", admin:"Admin"};
+  var names = {quiz:"WWE Quiz", predict:"Predict", career:"Your career", ranks:"Leaderboard", chat:"Locker Room", trending:"Trending", contact:"Message us", admin:"Admin"};
   document.title = names[h] + " | Wrestling Buzz";
   adminOpen = (h==="admin");
   if(h!=="quiz") stopTimer();
   if(adminOpen) showAdminGate();
   clearInterval(chatTimer); chatTimer = 0;
   clearInterval(statsTimer); statsTimer = 0;
+  clearInterval(lbTimer); lbTimer = 0;
+  if(h==="ranks") renderRanks();
   if(h==="career"){ renderCareer(); renderSections(); }
   if(h==="chat") renderChat();
   if(h==="trending") renderNews();
@@ -2874,7 +2932,7 @@ $("imp-q").addEventListener("change", function(){
    No names, emails or phone numbers are stored.
    ===================================================================== */
 var statsTimer = 0, lastPing = 0, lastPingPage = "";
-var PAGE_LABELS = {quiz:"Quiz", predict:"Predict", career:"Career", chat:"Chat", trending:"Trending", contact:"Message us", admin:"Admin"};
+var PAGE_LABELS = {quiz:"Quiz", predict:"Predict", career:"Career", ranks:"Leaderboard", chat:"Chat", trending:"Trending", contact:"Message us", admin:"Admin"};
 
 function statsConfigured(){ return !!(SUPABASE_URL && SUPABASE_KEY); }
 function currentView(){
@@ -2922,7 +2980,7 @@ function bars(items, labelFn){
 function pct(a,b){ return b ? Math.round(a/b*100) : 0; }
 
 function renderStats(){
-  renderMusicAdmin();
+  renderMusicAdmin(); renderLbAdmin();
   var off = $("stats-off"), login = $("stats-login"), body = $("stats-body"), msg = $("stats-msg");
   clearInterval(statsTimer); statsTimer = 0;
   msg.className = "msg"; msg.textContent = "";
@@ -3067,6 +3125,122 @@ $("music-form").addEventListener("submit", function(e){
     .catch(function(){ bad("The upload didn't work. Check you ran the latest supabase-setup.sql and you're signed in as an admin."); })
     .then(function(){ btn.disabled = false; });
 });
+
+/* =====================================================================
+   LEADERBOARD (players opt in; scores are sent to Supabase)
+   ===================================================================== */
+var LB_NAME_KEY = "wb_lb_name", lbKind = "week", lbTimer = 0, lbT = 0, lbLast = 0;
+var LB_LABELS = {week:"XP this week", all:"XP", survival:"best run", predict:"correct picks"};
+
+function lbJoined(){ return !!store(LB_NAME_KEY); }
+function predCorrectTotal(){ var n = 0; Object.keys(PROF.pred||{}).forEach(function(k){ n += PROF.pred[k].correct||0; }); return n; }
+function rpc(fn, body, withAuth){
+  var h = {"apikey":SUPABASE_KEY, "Content-Type":"application/json"};
+  if(withAuth && modToken()) h["Authorization"] = "Bearer "+modToken();
+  return fetch(SUPABASE_URL+"/rest/v1/rpc/"+fn, {method:"POST", headers:h, body:JSON.stringify(body||{})});
+}
+function submitScore(){
+  if(!statsConfigured() || !lbJoined()) return;
+  lbLast = Date.now();
+  rpc("submit_score", {p_id:myId(), p_name:store(LB_NAME_KEY), p_xp:PROF.xp, p_lvl:levelFor(PROF.xp).n, p_surv:PROF.survBest, p_pred:predCorrectTotal(), p_rounds:PROF.rounds}).catch(function(){});
+}
+function scheduleScoreSubmit(){
+  if(!statsConfigured() || !lbJoined() || lbT) return;
+  var wait = Math.max(3000, 15000-(Date.now()-lbLast));
+  lbT = setTimeout(function(){ lbT = 0; submitScore(); }, wait);
+}
+
+function renderRanks(){
+  clearInterval(lbTimer); lbTimer = 0;
+  $("lb-off").hidden = statsConfigured(); $("lb-main").hidden = !statsConfigured();
+  if(!statsConfigured()) return;
+  var joined = lbJoined();
+  $("lb-in").hidden = !joined; $("lb-form").hidden = joined;
+  if(joined) $("lb-name").textContent = store(LB_NAME_KEY);
+  else if(!$("lb-nm").value) $("lb-nm").value = (store(NAME_KEY) || "").slice(0,24);
+  document.querySelectorAll("#lb-tabs button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.kind===lbKind ? "true":"false"); });
+  loadBoard();
+  lbTimer = setInterval(loadBoard, 30000);
+}
+function loadBoard(){
+  var kind = lbKind;
+  rpc("leaderboard", {p_kind:kind, p_id:myId()})
+    .then(function(r){ if(!r.ok) throw new Error("bad"); return r.json(); })
+    .then(function(d){ if(kind===lbKind) drawBoard(d); })
+    .catch(function(){ var m = $("lb-msg"); m.className = "msg err"; m.textContent = "Can't load the leaderboard right now."; });
+}
+function drawBoard(d){
+  $("lb-msg").textContent = ""; $("lb-msg").className = "msg";
+  var list = $("lb-list"); list.innerHTML = "";
+  var top = (d && d.top) || [];
+  if(!top.length){ list.appendChild(el("p","hint","No scores yet. Be the first on the board!")); }
+  top.forEach(function(r){
+    var row = el("div","lbrow"+(r.me?" me":""));
+    row.appendChild(el("span","lbrank", String(r.rank)));
+    var nm = el("span","lbname", r.name); if(r.me) nm.appendChild(el("em","lbyou"," You"));
+    row.appendChild(nm);
+    row.appendChild(el("span","lblv","Lv "+r.lvl));
+    row.appendChild(el("b","lbscore", String(r.score)));
+    list.appendChild(row);
+  });
+  var me = $("lb-me");
+  if(d && d.me) me.textContent = "Your rank: #"+d.me.rank+" with "+d.me.score+" "+LB_LABELS[lbKind]+".";
+  else me.textContent = lbJoined() ? "You'll appear here once you score." : "Join the leaderboard to see your rank.";
+}
+
+document.querySelectorAll("#lb-tabs button").forEach(function(b){
+  b.addEventListener("click", function(){ lbKind = b.dataset.kind; renderRanks(); });
+});
+$("lb-form").addEventListener("submit", function(e){
+  e.preventDefault();
+  var m = $("lb-msg"); m.className = "msg";
+  var name = $("lb-nm").value.trim().slice(0,24);
+  if(!name){ m.textContent = "Choose a name to show."; m.classList.add("err"); return; }
+  if(cleanText(name)){ m.textContent = "Please choose a clean name with no links."; m.classList.add("err"); return; }
+  store(LB_NAME_KEY, name); store(NAME_KEY, name);
+  submitScore();
+  setTimeout(renderRanks, 700);
+});
+$("lb-leave").addEventListener("click", function(){
+  if(!confirm("Leave the leaderboard? Your name and score will be removed.")) return;
+  rpc("leave_board", {p_id:myId()}).catch(function(){});
+  try{ localStorage.removeItem(LB_NAME_KEY); }catch(e){}
+  setTimeout(renderRanks, 500);
+});
+
+/* ---------------- admin: remove or restore players ---------------- */
+function renderLbAdmin(){
+  var panel = $("lbadm-panel");
+  panel.hidden = !statsConfigured();
+  if(!statsConfigured()) return;
+  var signed = !!modToken();
+  $("lbadm-gate").hidden = signed; $("lbadm-body").hidden = !signed;
+  if(signed) loadLbAdmin();
+}
+function loadLbAdmin(){
+  rpc("admin_players", {}, true)
+    .then(function(r){ if(!r.ok) throw new Error("bad"); return r.json(); })
+    .then(function(rows){
+      var box = $("lbadm-list"); box.innerHTML = "";
+      if(!rows.length) box.appendChild(el("p","hint","Nobody has joined the leaderboard yet."));
+      rows.forEach(function(p){
+        var row = el("div","arow"), top = el("div","atop");
+        top.appendChild(el("span","cat", p.hidden ? "Removed" : "On the board"));
+        var b = el("button","mini", p.hidden ? "Restore" : "Remove"); b.type = "button";
+        b.addEventListener("click", function(){
+          if(!p.hidden && !confirm("Remove this player from the leaderboard?")) return;
+          rpc("admin_set_hidden", {p_id:p.id, p_hidden:!p.hidden}, true).then(loadLbAdmin);
+        });
+        top.appendChild(b); row.appendChild(top);
+        row.appendChild(el("p","aq", p.name+"  (Lv "+p.lvl+")"));
+        row.appendChild(el("p","aa", p.xp+" XP"));
+        box.appendChild(row);
+      });
+    })
+    .catch(function(){ var m = $("lbadm-msg"); m.className = "msg err"; m.textContent = "Couldn't load players. Run the latest supabase-setup.sql in Supabase first."; });
+}
+
+$("lbadm-refresh").addEventListener("click", loadLbAdmin);
 
 /* the Chat tab stays hidden until the chat is set up (SUPABASE_URL and SUPABASE_KEY above) */
 if(!chatConfigured()){ var chatTab = document.querySelector('[data-nav="chat"]'); if(chatTab) chatTab.hidden = true; }
