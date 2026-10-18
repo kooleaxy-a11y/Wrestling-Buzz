@@ -3296,10 +3296,13 @@ function doPublish(){
       renderAdmin();
     })
     .catch(function(err){
-      if(String(err && err.message).indexOf("version_conflict")>=0){ resolveConflict(); }
-      else if(String(err && err.message).indexOf("too_big")>=0){ setPubStatus("That's too much content (over 4 MB). Delete some old pictures or news.", true); }
-      else if(String(err && err.message).indexOf("not allowed")>=0 || String(err && err.message).indexOf("42501")>=0){ setPubStatus("Your login isn't on the admin list. Add your email to the admins table in Supabase.", true); }
-      else { setPubStatus("Couldn't save. Run the latest supabase-setup.sql in Supabase and check you're signed in under Live site stats.", true); }
+      var msg = String((err && err.message) || "");
+      if(msg.indexOf("version_conflict")>=0){ resolveConflict(); }
+      else if(msg.indexOf("too_big")>=0){ setPubStatus("That's too much content (over 4 MB). Delete some old pictures or news.", true); }
+      else if(msg.indexOf("not allowed")>=0 || msg.indexOf("42501")>=0){ setPubStatus("Your login isn't on the admin list. In Supabase, run: insert into public.admins (email) values ('your admin email');", true); }
+      else if(msg.indexOf("PGRST202")>=0 || msg.indexOf("Could not find the function")>=0 || msg.indexOf("42P01")>=0 || msg.indexOf("does not exist")>=0){ setPubStatus("Supabase doesn't have the save feature yet. Run supabase-live-content.sql in the Supabase SQL Editor, then try again.", true); }
+      else if(msg.indexOf("JWT")>=0 || msg.indexOf("401")>=0){ setPubStatus("Your sign-in has expired. Sign in again under Live site stats.", true); try{ sessionStorage.removeItem(MOD_KEY); }catch(e){} renderStats(); }
+      else { setPubStatus("Couldn't save. Supabase said: " + msg.slice(0,160), true); }
     })
     .then(function(){ pubBusy = false; if(pubDirty) schedulePublish(); });
 }
