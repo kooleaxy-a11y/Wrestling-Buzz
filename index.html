@@ -830,9 +830,11 @@ details.mod summary{cursor:pointer;font-weight:600}
 
     <div class="panel apanel">
       <h3 style="margin-top:0">Make your changes live</h3>
-      <p class="lead" style="margin-bottom:12px">1. Download <b>content.json</b>. 2. Put it in the same folder as <b>index.html</b> on your host (for Netlify, drag the whole folder onto Netlify again). 3. Refresh the site.</p>
+      <p class="lead" style="margin-bottom:8px">When you are signed in under <b>Live site stats</b>, everything you add or change is saved and goes live straight away. Just refresh the site to see it.</p>
+      <p class="msg" id="pub-status" role="status"></p>
+      <p class="hint" style="margin-bottom:12px">Backup option: download <b>content.json</b> to keep a copy of everything.</p>
       <div class="row" style="margin-top:0">
-        <button class="btn" id="adl" type="button">Download content.json</button>
+        <button class="btn ghost" id="adl" type="button">Download a backup (content.json)</button>
         <button class="btn ghost" id="areset" type="button">Discard my edits</button>
       </div>
       <label class="f" for="aimp" style="margin-top:18px">Load an existing content.json</label>
@@ -1718,6 +1720,7 @@ function renderSpin(){
 /* =====================================================================
    CONTENT LOADING (content.json is how admin changes go live)
    ===================================================================== */
+var sbContentLoaded = false, contentVersion = 0;
 function validContentBase(j){
   if(!j || !Array.isArray(j.questions)) return false;
   if(j.news && !Array.isArray(j.news)) return false;
@@ -1748,7 +1751,7 @@ function applyContent(j){
 try{
   fetch("content.json", {cache:"no-store"})
     .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(j){ if(validContent(j)) applyContent(j); })
+    .then(function(j){ if(!sbContentLoaded && validContent(j)) applyContent(j); })
     .catch(function(){});
 }catch(e){}
 
@@ -2173,23 +2176,31 @@ $("alogout").addEventListener("click", function(){
 });
 
 function loadDraft(){
+  if(statsConfigured() && modToken()){ draft = normalise(clone(CONTENT)); return; }
   var d = null;
   try{ d = JSON.parse(store(DRAFT_KEY)||"null"); }catch(e){ d = null; }
   draft = validContent(d) ? normalise(d) : normalise(clone(CONTENT));
 }
-function saveDraft(){ store(DRAFT_KEY, JSON.stringify(draft)); renderAdmin(); }
+function saveDraft(){ store(DRAFT_KEY, JSON.stringify(draft)); renderAdmin(); schedulePublish(); }
 
 function loadAdmin(){ if(!adminAuthed()) return; loadDraft(); renderAdmin(); }
 
 function renderAdmin(){
   var same = JSON.stringify(normalise(clone(draft))) === JSON.stringify(normalise(clone(CONTENT)));
   var st = $("astatus");
-  st.textContent = same
-    ? "Your list matches what's live on the site. " + draft.questions.length + " questions, " + draft.news.length + " news posts."
-    : "You have changes that are NOT live yet. Download content.json and upload it to your site to publish them. (" + draft.questions.length + " questions, " + draft.news.length + " news posts.)";
+  var counts = draft.questions.length + " questions, " + draft.news.length + " news posts.";
+  if(canPublish()){
+    st.textContent = same ? "Live. Anything you add or change here goes live instantly. " + counts : "Saving your changes... " + counts;
+  } else if(statsConfigured()){
+    st.textContent = "Sign in under Live site stats to publish instantly. Until then, changes only stay on this phone. " + counts;
+  } else {
+    st.textContent = same
+      ? "Your list matches what's live on the site. " + counts
+      : "You have changes that are NOT live yet. Download content.json and upload it to your site to publish them. (" + counts + ")";
+  }
   var kb = Math.round(JSON.stringify(draft).length/1024);
   if(kb>1500) st.textContent += " Heads up: content.json is " + kb + " KB. Too many pictures slow the site down, so consider deleting old news pictures.";
-  st.classList.toggle("warn", !same || kb>1500);
+  st.classList.toggle("warn", (!same && !canPublish()) || kb>1500);
 
   /* category suggestions */
   var cats = {}; draft.questions.forEach(function(q){ cats[q.cat]=1; });
@@ -2276,9 +2287,9 @@ $("an-img").addEventListener("change", function(){
   if(!f) return;
   if(!/^image\//.test(f.type)){ m.textContent = "Please choose a picture file."; m.classList.add("err"); this.value = ""; return; }
   m.textContent = "Preparing picture...";
-  shrinkImage(f).then(function(url){
+  shrinkImage(f).then(maybeUploadImage).then(function(url){
     newsImg = url; $("an-prev-img").src = url; $("an-prev").hidden = false;
-    m.textContent = "Picture ready (" + Math.round(url.length/1024) + " KB)."; m.classList.add("ok");
+    m.textContent = url.indexOf("data:")===0 ? "Picture ready (" + Math.round(url.length/1024) + " KB)." : "Picture uploaded and ready."; m.classList.add("ok");
   }).catch(function(){ clearNewsImg(); m.textContent = "That picture couldn't be read. Try another one."; m.classList.add("err"); });
 });
 $("an-rm").addEventListener("click", clearNewsImg);
@@ -2559,9 +2570,9 @@ $("ae-img").addEventListener("change", function(){
   if(!f) return;
   if(!/^image\//.test(f.type)){ m.textContent = "Please choose a picture file."; m.classList.add("err"); this.value = ""; return; }
   m.textContent = "Preparing picture...";
-  shrinkImage(f, 900, 0.72).then(function(url){
+  shrinkImage(f, 900, 0.72).then(maybeUploadImage).then(function(url){
     eventImg = url; $("ae-prev-img").src = url; $("ae-prev").hidden = false;
-    m.textContent = "Picture ready (" + Math.round(url.length/1024) + " KB)."; m.classList.add("ok");
+    m.textContent = url.indexOf("data:")===0 ? "Picture ready (" + Math.round(url.length/1024) + " KB)." : "Picture uploaded and ready."; m.classList.add("ok");
   }).catch(function(){ clearEventImg(); m.textContent = "That picture couldn't be read. Try another one."; m.classList.add("err"); });
 });
 $("ae-rm").addEventListener("click", clearEventImg);
@@ -2664,7 +2675,7 @@ function renderAdminEvents(){
         fi.addEventListener("change", function(){
           var f = fi.files && fi.files[0]; if(!f) return;
           pm.className = "msg"; pm.textContent = "Preparing picture...";
-          shrinkImage(f, 800, 0.7).then(function(url){ setImg(url); saveDraft(); })
+          shrinkImage(f, 800, 0.7).then(maybeUploadImage).then(function(url){ setImg(url); saveDraft(); })
             .catch(function(){ pm.textContent = "That picture couldn't be read."; pm.classList.add("err"); });
         });
         pp.appendChild(fi);
@@ -3044,7 +3055,7 @@ $("stats-login").addEventListener("submit", function(e){
     .then(function(j){
       if(j && j.access_token){
         try{ sessionStorage.setItem(MOD_KEY, JSON.stringify({token:j.access_token, exp:Date.now()+((j.expires_in||3600)*1000)-60000})); }catch(err){}
-        $("st-pw").value = ""; renderStats();
+        $("st-pw").value = ""; renderStats(); loadAdmin();
       } else { m.textContent = "Wrong email or password."; m.classList.add("err"); }
     })
     .catch(function(){ m.textContent = "Couldn't sign in. Try again."; m.classList.add("err"); });
@@ -3241,6 +3252,82 @@ function loadLbAdmin(){
 }
 
 $("lbadm-refresh").addEventListener("click", loadLbAdmin);
+
+/* =====================================================================
+   LIVE CONTENT: admins publish straight to Supabase, visitors see it on refresh
+   ===================================================================== */
+var pubTimer = 0, pubBusy = false, pubDirty = false;
+
+function liveContentOn(){ return statsConfigured(); }
+function canPublish(){ return statsConfigured() && !!modToken(); }
+
+function loadLiveContent(){
+  fetch(SUPABASE_URL+"/rest/v1/content?key=eq.main&select=data,version", {headers:{"apikey":SUPABASE_KEY}, cache:"no-store"})
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(rows){
+      if(rows && rows[0] && validContent(rows[0].data)){
+        sbContentLoaded = true; contentVersion = Number(rows[0].version)||0;
+        applyContent(rows[0].data);
+      }
+    }).catch(function(){});
+}
+if(liveContentOn()) loadLiveContent();
+
+function setPubStatus(text, isErr){
+  var m = $("pub-status"); if(!m) return;
+  m.className = "msg" + (isErr ? " err" : (text ? " ok" : "")); m.textContent = text;
+}
+function schedulePublish(){
+  if(!canPublish()) return;
+  pubDirty = true; setPubStatus("Saving...");
+  clearTimeout(pubTimer); pubTimer = setTimeout(doPublish, 700);
+}
+function doPublish(){
+  if(pubBusy){ pubTimer = setTimeout(doPublish, 500); return; }
+  pubBusy = true; pubDirty = false;
+  var data = normalise(clone(draft));
+  rpc("save_content", {p_data:data, p_version:contentVersion}, true)
+    .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error(t); }); return r.json(); })
+    .then(function(v){
+      contentVersion = Number(v)||contentVersion+1;
+      CONTENT = normalise(clone(data)); QUESTIONS = CONTENT.questions; sbContentLoaded = true;
+      renderNews();
+      setPubStatus("Saved. It's live now. Refresh the site to see it.");
+      renderAdmin();
+    })
+    .catch(function(err){
+      if(String(err && err.message).indexOf("version_conflict")>=0){ resolveConflict(); }
+      else if(String(err && err.message).indexOf("too_big")>=0){ setPubStatus("That's too much content (over 4 MB). Delete some old pictures or news.", true); }
+      else if(String(err && err.message).indexOf("not allowed")>=0 || String(err && err.message).indexOf("42501")>=0){ setPubStatus("Your login isn't on the admin list. Add your email to the admins table in Supabase.", true); }
+      else { setPubStatus("Couldn't save. Run the latest supabase-setup.sql in Supabase and check you're signed in under Live site stats.", true); }
+    })
+    .then(function(){ pubBusy = false; if(pubDirty) schedulePublish(); });
+}
+function resolveConflict(){
+  fetch(SUPABASE_URL+"/rest/v1/content?key=eq.main&select=data,version", {headers:{"apikey":SUPABASE_KEY}, cache:"no-store"})
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if(rows && rows[0] && validContent(rows[0].data)){
+        contentVersion = Number(rows[0].version)||0;
+        CONTENT = normalise(clone(rows[0].data)); QUESTIONS = CONTENT.questions;
+        draft = normalise(clone(CONTENT)); renderNews(); renderAdmin();
+        setPubStatus("Another admin saved a change at the same time. I loaded the latest version, so please redo your last change.", true);
+      }
+    }).catch(function(){ setPubStatus("Couldn't save because of a clash with another admin. Refresh the page and try again.", true); });
+}
+
+/* pictures go to Supabase storage when an admin is signed in, so the content stays small */
+function maybeUploadImage(dataUrl){
+  if(typeof dataUrl!=="string" || dataUrl.indexOf("data:image/")!==0 || !canPublish()) return Promise.resolve(dataUrl);
+  var name = Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+".jpg";
+  return fetch(dataUrl).then(function(r){ return r.blob(); }).then(function(blob){
+    return fetch(SUPABASE_URL+"/storage/v1/object/images/"+name, {method:"POST",
+      headers:{"apikey":SUPABASE_KEY, "Authorization":"Bearer "+modToken(), "Content-Type":"image/jpeg", "x-upsert":"false"}, body:blob});
+  }).then(function(r){
+    if(!r.ok) throw new Error("upload");
+    return SUPABASE_URL+"/storage/v1/object/public/images/"+name;
+  }).catch(function(){ return dataUrl; });
+}
 
 /* the Chat tab stays hidden until the chat is set up (SUPABASE_URL and SUPABASE_KEY above) */
 if(!chatConfigured()){ var chatTab = document.querySelector('[data-nav="chat"]'); if(chatTab) chatTab.hidden = true; }
