@@ -349,6 +349,14 @@ details.mod summary{cursor:pointer;font-weight:600}
 .sbar em{font-style:normal;font-size:11px;color:var(--steel);margin-bottom:2px}
 .sbar span{position:absolute;bottom:-18px;font-size:10px;color:var(--steel);white-space:nowrap}
 .stips p{margin-top:8px;color:var(--steel);font-size:15px}
+
+.mus{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;align-items:center;gap:8px;
+  background:var(--canvas);color:var(--rope);border:2px solid var(--line);border-radius:999px;padding:10px 16px;font-weight:700;font-size:15px;cursor:pointer;
+  box-shadow:0 4px 18px rgba(0,0,0,.45)}
+.mus:hover{border-color:var(--rope)}
+.mus[aria-pressed="true"]{border-color:var(--crimson)}
+.mus svg{width:20px;height:20px;flex:none}
+.np{margin-top:6px;font-size:13px;color:var(--steel)}
 </style>
 </head>
 <body>
@@ -678,6 +686,23 @@ details.mod summary{cursor:pointer;font-weight:600}
       <p class="msg" id="stats-msg" role="status"></p>
     </div>
 
+    <div class="panel apanel" id="music-panel" hidden>
+      <h3 style="margin-top:0">Music library</h3>
+      <p class="hint" style="margin:-4px 0 10px">Upload mp3 tracks to play as background music on the site. Only upload music you own or are licensed to use on a public website.</p>
+      <div id="music-gate" hidden><p class="hint">Sign in under <b>Live site stats</b> first (same email and password), then come back here.</p></div>
+      <div id="music-body" hidden>
+        <form id="music-form" novalidate class="agrid">
+          <input id="mu-title" type="text" maxlength="80" placeholder="Track title" aria-label="Track title">
+          <input id="mu-credit" type="text" maxlength="120" placeholder="Artist or source (shown on the site)" aria-label="Artist or source">
+          <div><input id="mu-file" type="file" accept="audio/mpeg,.mp3"><p class="hint">mp3 only, up to 8 MB. A 30 to 90 second loop is plenty.</p></div>
+          <label class="chk"><input type="checkbox" id="mu-rights"> I own this track, or I have a license to use it on this website.</label>
+          <div class="row" style="margin-top:0"><button class="btn" id="mu-go" type="submit">Upload track</button></div>
+        </form>
+        <p class="msg" id="mu-msg" role="status"></p>
+        <div id="mu-list"></div>
+      </div>
+    </div>
+
     <div class="panel apanel">
       <h3 style="margin-top:0">Add a question</h3>
       <form id="addq" novalidate class="agrid">
@@ -768,6 +793,11 @@ details.mod summary{cursor:pointer;font-weight:600}
 </section>
 
 </main>
+
+<button class="mus" id="mus" type="button" aria-pressed="false" aria-label="Turn background music on or off">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path id="mus-w1" d="M15.5 8.5a5 5 0 0 1 0 7"/><path id="mus-w2" d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+  <span id="mus-t">Music</span>
+</button>
 
 <footer>
   <div class="wrap">Wrestling Buzz is a fan-made community site and isn't affiliated with WWE. <a class="admin-foot" href="#admin">Admin</a></div>
@@ -2892,6 +2922,7 @@ function bars(items, labelFn){
 function pct(a,b){ return b ? Math.round(a/b*100) : 0; }
 
 function renderStats(){
+  renderMusicAdmin();
   var off = $("stats-off"), login = $("stats-login"), body = $("stats-body"), msg = $("stats-msg");
   clearInterval(statsTimer); statsTimer = 0;
   msg.className = "msg"; msg.textContent = "";
@@ -2962,8 +2993,250 @@ $("stats-login").addEventListener("submit", function(e){
 });
 $("stats-out").addEventListener("click", function(){ try{ sessionStorage.removeItem(MOD_KEY); }catch(e){} renderStats(); });
 
+/* =====================================================================
+   MUSIC LIBRARY (admins upload mp3 tracks that play on the site)
+   Files are stored in the free Supabase storage. Only upload music you own or are licensed to use on a public website.
+   ===================================================================== */
+var MUSIC_BUCKET = "music", MUSIC_MAX = 8*1024*1024;
+function trackUrl(path){ return SUPABASE_URL+"/storage/v1/object/public/"+MUSIC_BUCKET+"/"+encodeURIComponent(path); }
+
+function renderMusicAdmin(){
+  var panel = $("music-panel");
+  panel.hidden = !statsConfigured();
+  if(!statsConfigured()) return;
+  var signed = !!modToken();
+  $("music-gate").hidden = signed; $("music-body").hidden = !signed;
+  if(signed) loadTrackList();
+}
+function loadTrackList(){
+  fetch(SUPABASE_URL+"/rest/v1/tracks?select=id,title,credit,path,active&order=id.desc", {headers:sbHead()})
+    .then(function(r){ if(!r.ok) throw new Error("bad"); return r.json(); })
+    .then(drawTrackList)
+    .catch(function(){ var m = $("mu-msg"); m.className = "msg err"; m.textContent = "Couldn't load the track list. Run the latest supabase-setup.sql in Supabase first."; });
+}
+function drawTrackList(rows){
+  var box = $("mu-list"); box.innerHTML = "";
+  if(!rows.length){ box.appendChild(el("p","hint","No tracks yet. Until you upload one, the site plays its built-in beat.")); return; }
+  rows.forEach(function(t){
+    var row = el("div","arow");
+    var top = el("div","atop");
+    top.appendChild(el("span","cat", t.active ? "Playing on the site" : "Hidden"));
+    var acts = el("div","");
+    var tg = el("button","mini", t.active ? "Hide" : "Show"); tg.type = "button"; tg.style.marginRight = "6px";
+    tg.addEventListener("click", function(){
+      fetch(SUPABASE_URL+"/rest/v1/tracks?id=eq."+t.id, {method:"PATCH", headers:sbHead({"Prefer":"return=minimal"}), body:JSON.stringify({active:!t.active})}).then(loadTrackList);
+    });
+    var dl = el("button","mini","Delete"); dl.type = "button";
+    dl.addEventListener("click", function(){
+      if(!confirm("Delete this track for good?")) return;
+      fetch(SUPABASE_URL+"/rest/v1/tracks?id=eq."+t.id, {method:"DELETE", headers:sbHead({"Prefer":"return=minimal"})})
+        .then(function(){ return fetch(SUPABASE_URL+"/storage/v1/object/"+MUSIC_BUCKET+"/"+encodeURIComponent(t.path), {method:"DELETE", headers:sbHead()}); })
+        .then(loadTrackList).catch(loadTrackList);
+    });
+    acts.appendChild(tg); acts.appendChild(dl); top.appendChild(acts);
+    row.appendChild(top);
+    row.appendChild(el("p","aq", t.title));
+    if(t.credit) row.appendChild(el("p","aa", "Credit: "+t.credit));
+    var au = document.createElement("audio"); au.controls = true; au.preload = "none"; au.src = trackUrl(t.path); au.style.cssText = "width:100%;margin-top:8px";
+    row.appendChild(au);
+    box.appendChild(row);
+  });
+}
+
+$("music-form").addEventListener("submit", function(e){
+  e.preventDefault();
+  var m = $("mu-msg"); m.className = "msg";
+  function bad(t){ m.textContent = t; m.classList.add("err"); }
+  var title = $("mu-title").value.trim(), credit = $("mu-credit").value.trim(), file = $("mu-file").files && $("mu-file").files[0];
+  if(!modToken()) return bad("Sign in under Live site stats first.");
+  if(!title) return bad("Add a track title.");
+  if(!file) return bad("Choose an mp3 file.");
+  if(!/\.mp3$/i.test(file.name) && file.type!=="audio/mpeg") return bad("Only mp3 files please.");
+  if(file.size>MUSIC_MAX) return bad("That file is over 8 MB. Use a shorter or smaller mp3.");
+  if(!$("mu-rights").checked) return bad("Please confirm you own the track or have a license to use it on this website.");
+  var path = Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+".mp3";
+  var btn = $("mu-go"); btn.disabled = true; m.textContent = "Uploading...";
+  fetch(SUPABASE_URL+"/storage/v1/object/"+MUSIC_BUCKET+"/"+encodeURIComponent(path), {method:"POST",
+        headers:{"apikey":SUPABASE_KEY, "Authorization":"Bearer "+modToken(), "Content-Type":"audio/mpeg", "x-upsert":"false"}, body:file})
+    .then(function(r){ if(!r.ok) throw new Error("upload"); })
+    .then(function(){
+      return fetch(SUPABASE_URL+"/rest/v1/tracks", {method:"POST", headers:sbHead({"Prefer":"return=minimal"}), body:JSON.stringify({title:title.slice(0,80), credit:credit.slice(0,120), path:path})})
+        .then(function(r){ if(!r.ok){ fetch(SUPABASE_URL+"/storage/v1/object/"+MUSIC_BUCKET+"/"+encodeURIComponent(path), {method:"DELETE", headers:sbHead()}).catch(function(){}); throw new Error("row"); } });
+    })
+    .then(function(){ $("music-form").reset(); m.textContent = "Track uploaded. It will play on the site for visitors."; m.classList.add("ok"); loadTrackList(); })
+    .catch(function(){ bad("The upload didn't work. Check you ran the latest supabase-setup.sql and you're signed in as an admin."); })
+    .then(function(){ btn.disabled = false; });
+});
+
 /* the Chat tab stays hidden until the chat is set up (SUPABASE_URL and SUPABASE_KEY above) */
 if(!chatConfigured()){ var chatTab = document.querySelector('[data-nav="chat"]'); if(chatTab) chatTab.hidden = true; }
+
+
+/* =====================================================================
+   BACKGROUND MUSIC (original beat made in the browser, no audio files)
+   Browsers only allow sound after a tap, so it starts on the first tap anywhere.
+   The Music button turns it on or off, and remembers the choice.
+   ===================================================================== */
+var MUS_KEY = "wb_music_off";            /* "1" when the visitor switched it off */
+var MUS_VOL = 0.2;                       /* background volume, 0 to 1 */
+var BPM = 104, EIGHTH = 60/BPM/2;
+var BG_ROOTS = [164.81, 164.81, 130.81, 146.83];   /* E, E, C, D power chords */
+var SILENT_WAV = "data:audio/wav;base64,UklGRmQfAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YUAfAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
+var MUSIC_FILE = "music.mp3", musMode = "synth", musAudio = null;   /* drop a track you are licensed to use into the site as music.mp3 and it plays instead of the built-in beat */
+(function(){
+  try{ fetch(MUSIC_FILE, {method:"HEAD", cache:"no-store"}).then(function(r){ if(r.ok && /^audio\//i.test(r.headers.get("content-type")||"") && musMode==="synth") musSwitch("file"); }).catch(function(){}); }catch(e){}
+  if(statsConfigured()){
+    try{
+      fetch(SUPABASE_URL+"/rest/v1/tracks?select=id,title,credit,path&active=eq.true&order=id.asc", {headers:{"apikey":SUPABASE_KEY}})
+        .then(function(r){ return r.ok ? r.json() : []; })
+        .then(function(rows){ if(Array.isArray(rows) && rows.length){ musTracks = rows.sort(function(){ return Math.random()-0.5; }); musIdx = 0; musSwitch("playlist"); } })
+        .catch(function(){});
+    }catch(e){}
+  }
+})();
+var musTracks = [], musIdx = 0;
+function musSwitch(mode){
+  var wasOn = mOn;
+  if(wasOn) musOff();
+  musAudio = null; musMode = mode;
+  if(wasOn) musOn();
+}
+function setNowPlaying(t){
+  var np = document.getElementById("np");
+  if(!np){ np = document.createElement("div"); np.id = "np"; np.className = "np"; var f = document.querySelector("footer .wrap"); if(f) f.appendChild(np); }
+  np.textContent = "Music: "+t.title+(t.credit ? " | "+t.credit : "");
+  var b = document.getElementById("mus"); if(b) b.title = "Now playing: "+t.title;
+}
+function musLoadTrack(){ var t = musTracks[musIdx]; musAudio.src = trackUrl(t.path); setNowPlaying(t); }
+function musAudioStart(){
+  if(!musAudio){
+    musAudio = new Audio(); musAudio.volume = 0.35;
+    if(musMode==="playlist"){
+      musAudio.addEventListener("ended", function(){ musIdx = (musIdx+1)%musTracks.length; musLoadTrack(); var q = musAudio.play(); if(q && q.catch) q.catch(function(){}); });
+      musAudio.addEventListener("error", function(){ musMode = "synth"; musAudio = null; if(mOn){ mOn = false; musOn(); } });
+      musLoadTrack();
+    } else { musAudio.loop = true; musAudio.src = MUSIC_FILE; }
+  }
+  var pr = musAudio.play(); if(pr && pr.catch) pr.catch(function(){});
+}
+var mAc = null, mMaster = null, mTimer = 0, mNext = 0, mStep = 0, mOn = false, mKeep = null, mNoise = null, mCurve = null;
+
+function musUnlockAudio(){
+  try{
+    if(!mKeep){ mKeep = new Audio(SILENT_WAV); mKeep.loop = true; mKeep.setAttribute("playsinline",""); }
+    var pr = mKeep.play(); if(pr && pr.catch) pr.catch(function(){});
+  }catch(e){}
+}
+
+function musEnv(g,t,a,dur,vol){ g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+a); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); }
+function musKick(t){
+  var o=mAc.createOscillator(), g=mAc.createGain(); o.type="sine";
+  o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(42,t+0.14);
+  musEnv(g,t,0.005,0.3,0.9); o.connect(g); g.connect(mMaster); o.start(t); o.stop(t+0.33);
+}
+function musNoise(t,dur,type,freq,vol){
+  var s=mAc.createBufferSource(); s.buffer=mNoise;
+  var f=mAc.createBiquadFilter(); f.type=type; f.frequency.value=freq;
+  var g=mAc.createGain(); musEnv(g,t,0.003,dur,vol);
+  s.connect(f); f.connect(g); g.connect(mMaster); s.start(t, Math.random()*0.5); s.stop(t+dur+0.05);
+}
+function musSnare(t){
+  musNoise(t,0.18,"highpass",1800,0.45);
+  var o=mAc.createOscillator(), g=mAc.createGain(); o.type="triangle"; o.frequency.value=190;
+  musEnv(g,t,0.002,0.11,0.32); o.connect(g); g.connect(mMaster); o.start(t); o.stop(t+0.14);
+}
+function musChug(t,root,dur,vol){
+  [root, root*1.5, root*2].forEach(function(fr,n){
+    var o=mAc.createOscillator(); o.type="sawtooth"; o.frequency.value=fr; o.detune.value=(n-1)*7;
+    var w=mAc.createWaveShaper(); w.curve=mCurve; w.oversample="2x";
+    var lp=mAc.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2000;
+    var g=mAc.createGain(); musEnv(g,t,0.004,dur,vol);
+    o.connect(w); w.connect(lp); lp.connect(g); g.connect(mMaster); o.start(t); o.stop(t+dur+0.05);
+  });
+}
+function musBass(t,f,dur){
+  var o=mAc.createOscillator(); o.type="sawtooth"; o.frequency.value=f;
+  var lp=mAc.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=400;
+  var g=mAc.createGain(); musEnv(g,t,0.01,dur,0.45);
+  o.connect(lp); lp.connect(g); g.connect(mMaster); o.start(t); o.stop(t+dur+0.05);
+}
+function musStep(step,t){
+  var p = step%8, bar = Math.floor(step/8), r = BG_ROOTS[bar%4];
+  musNoise(t,0.05,"highpass",7000, p%2===0 ? 0.13 : 0.07);                 /* hi-hat */
+  if(p===0 || p===4 || (p===3 && bar%2===1)) musKick(t);                    /* kick */
+  if(p===2 || p===6) musSnare(t);                                           /* snare */
+  musChug(t, r, (p===0||p===4) ? 0.24 : 0.13, (p===0||p===4) ? 0.13 : 0.08);/* guitar chugs */
+  if(p%2===0) musBass(t, r/2, 0.4);                                         /* bass */
+}
+function musSchedule(){
+  if(!mAc) return;
+  while(mNext < mAc.currentTime + 1.3){ musStep(mStep, mNext); mNext += EIGHTH; mStep++; }
+}
+
+function musSetUI(on){
+  var b = $("mus");
+  b.setAttribute("aria-pressed", on ? "true":"false");
+  $("mus-t").textContent = on ? "Music on" : "Music off";
+  $("mus-w1").style.display = on ? "" : "none";
+  $("mus-w2").style.display = on ? "" : "none";
+}
+
+function musOn(){
+  if(musMode!=="synth"){ musAudioStart(); mOn = true; musSetUI(true); return; }
+  var AC = window.AudioContext || window.webkitAudioContext;
+  if(!AC) return;
+  musUnlockAudio();
+  if(!mAc){
+    mAc = new AC();
+    mMaster = mAc.createGain(); mMaster.gain.value = 0.0001;
+    var comp = mAc.createDynamicsCompressor(); mMaster.connect(comp); comp.connect(mAc.destination);
+    var len = mAc.sampleRate*2; mNoise = mAc.createBuffer(1,len,mAc.sampleRate);
+    var d = mNoise.getChannelData(0); for(var i=0;i<len;i++) d[i]=Math.random()*2-1;
+    mCurve = new Float32Array(1024); for(var k=0;k<1024;k++){ mCurve[k]=Math.tanh((k/512-1)*12); }
+    mNext = mAc.currentTime + 0.1; mStep = 0;
+    mTimer = setInterval(musSchedule, 250);
+  }
+  if(mAc.resume) mAc.resume();
+  mNext = Math.max(mNext, mAc.currentTime + 0.05);
+  mMaster.gain.cancelScheduledValues(mAc.currentTime);
+  mMaster.gain.setValueAtTime(Math.max(mMaster.gain.value,0.0001), mAc.currentTime);
+  mMaster.gain.linearRampToValueAtTime(MUS_VOL, mAc.currentTime + 0.8);
+  mOn = true; musSetUI(true);
+}
+function musOff(){
+  mOn = false; musSetUI(false);
+  if(musMode!=="synth"){ if(musAudio) musAudio.pause(); return; }
+  if(!mAc) return;
+  mMaster.gain.cancelScheduledValues(mAc.currentTime);
+  mMaster.gain.setValueAtTime(Math.max(mMaster.gain.value,0.0001), mAc.currentTime);
+  mMaster.gain.linearRampToValueAtTime(0.0001, mAc.currentTime + 0.3);
+  var c = mAc;
+  setTimeout(function(){ if(!mOn && c===mAc && c.suspend) c.suspend(); }, 450);
+}
+
+$("mus").addEventListener("click", function(){
+  if(mOn){ store(MUS_KEY,"1"); musOff(); }
+  else { store(MUS_KEY,"0"); musOn(); }
+});
+
+/* start on the first tap anywhere, unless the visitor switched music off before */
+function musFirstTap(e){
+  if(e.target && e.target.closest && e.target.closest("#mus")) return;
+  document.removeEventListener("pointerdown", musFirstTap, true);
+  document.removeEventListener("keydown", musFirstTap, true);
+  if(store(MUS_KEY)!=="1" && !mOn) musOn();
+}
+document.addEventListener("pointerdown", musFirstTap, true);
+document.addEventListener("keydown", musFirstTap, true);
+musSetUI(false);
+
+/* save battery: pause when the tab is hidden */
+document.addEventListener("visibilitychange", function(){
+  if(musMode!=="synth" && musAudio){ if(document.hidden) musAudio.pause(); else if(mOn){ var q = musAudio.play(); if(q && q.catch) q.catch(function(){}); } return; }
+  if(!mAc) return;
+  if(document.hidden){ if(mAc.suspend) mAc.suspend(); }
+  else if(mOn && mAc.resume){ mAc.resume(); }
+});
 
 route();
 
