@@ -782,9 +782,15 @@ details.mod summary{cursor:pointer;font-weight:600}
 
     <div class="panel apanel">
       <h3 style="margin-top:0">Import many questions at once</h3>
-      <p class="hint" style="margin:-4px 0 10px">Choose a questions file (.json) prepared for you. New questions are added to the list. Any question already in the list is skipped.</p>
-      <input id="imp-q" type="file" accept="application/json,.json">
+      <p class="hint" style="margin:-4px 0 10px">Choose one or more files (JSON, CSV, text or Word), or paste your questions. I'll read them and show what I found before anything is added. Each question needs 4 options and a correct answer.</p>
+      <input id="imp-q" type="file" multiple>
+      <p class="hint" style="margin-top:12px">Or paste the questions here (any list with A, B, C, D options and an answer):</p>
+      <textarea id="imp-paste" style="min-height:130px" placeholder="1. Who won ...?&#10;A. ...  B. ...  C. ...  D. ...&#10;Answer: B"></textarea>
+      <label class="f" for="imp-cat" style="margin-top:10px">Category for questions that don't have one</label>
+      <input id="imp-cat" type="text" maxlength="40" value="General">
+      <div class="row" style="margin-top:12px"><button class="btn ghost" id="imp-read" type="button" style="padding:10px 20px;min-height:0;font-size:19px">Read the pasted text</button></div>
       <p class="msg" id="impmsg" role="status"></p>
+      <div id="imp-preview"></div>
     </div>
 
     <div class="panel apanel">
@@ -2905,36 +2911,304 @@ $("mod-out").addEventListener("click", function(){
 });
 
 
-/* ---------- bulk import of questions ---------- */
-$("imp-q").addEventListener("change", function(){
-  var f = this.files && this.files[0], m = $("impmsg"), input = this; m.className = "msg";
-  if(!f) return;
-  var rd = new FileReader();
-  rd.onload = function(){
-    try{
-      var j = JSON.parse(rd.result);
-      var list = Array.isArray(j) ? j : (j && Array.isArray(j.questions) ? j.questions : null);
-      if(!list) throw new Error("shape");
-      var have = {}; draft.questions.forEach(function(q){ have[q.q.trim().toLowerCase()] = true; });
-      var added = 0, dup = 0, bad = 0;
-      list.forEach(function(x){
-        var ok = x && typeof x.cat==="string" && x.cat.trim() && typeof x.q==="string" && x.q.trim() && Array.isArray(x.o) && x.o.length===4 &&
-                 x.o.every(function(o){ return typeof o==="string" && o.trim(); }) && Number.isInteger(x.a) && x.a>=0 && x.a<4;
-        if(ok){ var low = x.o.map(function(o){ return o.trim().toLowerCase(); }); ok = low.every(function(o,i){ return low.indexOf(o)===i; }); }
-        if(!ok){ bad++; return; }
-        var key = x.q.trim().toLowerCase();
-        if(have[key]){ dup++; return; }
-        have[key] = true;
-        draft.questions.push({id:draft.nextId++, cat:x.cat.trim().slice(0,40), q:x.q.trim().slice(0,400), o:x.o.map(function(o){ return o.trim().slice(0,120); }), a:x.a});
-        added++;
+/* ---------- smart import of questions (JSON, CSV, text, Word, or pasted text) ---------- */
+function nk(k){ return String(k).toLowerCase().replace(/[^a-z0-9]/g,""); }
+function normText(x){ return String(x==null?"":x).toLowerCase().replace(/[^a-z0-9]+/g," ").trim(); }
+function getKey(o, names){
+  var map = {}; Object.keys(o).forEach(function(k){ map[nk(k)] = k; });
+  for(var i=0;i<names.length;i++){ var k = map[names[i]]; if(k!==undefined && o[k]!==null && o[k]!==undefined && String(o[k]).trim()!=="") return o[k]; }
+  return undefined;
+}
+var Q_NAMES = ["question","q","questiontext","text","prompt","title","query"];
+var OPT_ARRAY_NAMES = ["options","choices","answers","alternatives","answeroptions","responses","o"];
+var ANS_NAMES = ["correctanswer","correct","answer","correctoption","correctchoice","answerindex","correctindex","correctanswerindex","rightanswer","right","solution","key","ans","a"];
+var CAT_NAMES = ["category","cat","topic","section","round","group","subject","theme"];
+
+function resolveAnswer(ans, opts, oneBased){
+  if(ans===undefined || ans===null) return -1;
+  if(typeof ans==="number"){ var i = oneBased ? ans-1 : ans; return (i>=0 && i<opts.length) ? i : -1; }
+  var t = String(ans).trim(); if(!t) return -1;
+  var m = t.match(/^\(?([A-Da-d])\)?(?:\s*[\.\):\-]\s*(.*))?$/);
+  if(m){
+    var li = m[1].toUpperCase().charCodeAt(0)-65;
+    if(!m[2] || normText(opts[li])===normText(m[2]) || normText(m[2])==="") return li < opts.length ? li : -1;
+  }
+  if(/^\d+$/.test(t)){ var n = parseInt(t,10), k = oneBased ? n-1 : n; return (k>=0 && k<opts.length) ? k : -1; }
+  var nt = normText(t), hit = -1, cnt = 0;
+  opts.forEach(function(o,idx){ if(normText(o)===nt){ hit = idx; cnt++; } });
+  if(cnt===1) return hit;
+  hit = -1; cnt = 0;
+  opts.forEach(function(o,idx){ var no = normText(o); if(no && (no.indexOf(nt)>=0 || nt.indexOf(no)>=0)){ hit = idx; cnt++; } });
+  return cnt===1 ? hit : -1;
+}
+
+/* turn a list of loose objects (from JSON or CSV) into questions */
+function fromObjects(arr, defCat, label){
+  var items = [], problems = [];
+  /* decide whether numeric answers start at 1 */
+  var nums = [];
+  arr.forEach(function(e){ if(e && typeof e==="object"){ var v = getKey(e, ANS_NAMES); if(typeof v==="number") nums.push(v); } });
+  var oneBased = nums.length>0 && Math.max.apply(null,nums)===4 && Math.min.apply(null,nums)>=1;
+  arr.forEach(function(e, idx){
+    var tag = (label?label+" ":"")+"#"+(idx+1);
+    if(!e || typeof e!=="object"){ problems.push(tag+": not a question"); return; }
+    var q = getKey(e, Q_NAMES);
+    if(q===undefined){ problems.push(tag+": no question text (found: "+Object.keys(e).slice(0,6).join(", ")+")"); return; }
+    q = String(q).trim();
+    var opts = [], correctFlag = -1;
+    var arrOpts = getKey(e, OPT_ARRAY_NAMES);
+    if(Array.isArray(arrOpts)){
+      arrOpts.forEach(function(o,i){
+        if(o && typeof o==="object"){
+          var tx = getKey(o, ["text","label","value","option","name","answer","title"]); opts.push(String(tx===undefined?"":tx).trim());
+          var cf = getKey(o, ["correct","iscorrect","isanswer","right"]); if(cf===true || cf==="true" || cf===1) correctFlag = i;
+        } else opts.push(String(o==null?"":o).trim());
       });
-      saveDraft();
-      m.textContent = "Added "+added+" question"+(added===1?"":"s")+". Skipped "+dup+" already in the list"+(bad? " and "+bad+" that were not valid" : "")+". Now download content.json below.";
-      m.classList.add(added>0 ? "ok" : "err");
-    }catch(err){ m.textContent = "That file isn't a valid questions file."; m.classList.add("err"); }
-    input.value = "";
-  };
-  rd.readAsText(f);
+    } else if(arrOpts && typeof arrOpts==="object"){
+      Object.keys(arrOpts).sort().forEach(function(k){ opts.push(String(arrOpts[k]).trim()); });
+    } else {
+      "ABCD".split("").forEach(function(L,i){
+        var v = getKey(e, [L.toLowerCase(), "option"+L.toLowerCase(), "choice"+L.toLowerCase(), "answer"+L.toLowerCase(), "opt"+L.toLowerCase(), "option"+(i+1), "choice"+(i+1), "answer"+(i+1), "opt"+(i+1)]);
+        if(v!==undefined) opts.push(String(v).trim());
+      });
+    }
+    opts = opts.filter(function(o){ return o!==""; });
+    var ansRaw = getKey(e, Array.isArray(arrOpts) ? ANS_NAMES : ANS_NAMES.filter(function(n){ return n!=="a"; }));
+    var ai = correctFlag>=0 ? correctFlag : resolveAnswer(ansRaw, opts, oneBased);
+    if(ai<0 && typeof ansRaw==="string" && opts.length===3 && ansRaw.trim()){ opts.push(ansRaw.trim()); ai = 3; }
+    if(opts.length>4){
+      if(ai<0){ problems.push(tag+": more than 4 options and I can't tell the answer"); return; }
+      var right = opts[ai], others = opts.filter(function(o,i){ return i!==ai; }).slice(0,3);
+      opts = others.concat([right]); opts = shuffle(opts); ai = opts.indexOf(right);
+    }
+    if(opts.length<4){ problems.push(tag+": needs 4 answer options (found "+opts.length+")"); return; }
+    if(ai<0){ problems.push(tag+": can't tell which option is correct"); return; }
+    var low = opts.map(normText);
+    if(low.some(function(o,i){ return !o || low.indexOf(o)!==i; })){ problems.push(tag+": two options are the same or empty"); return; }
+    var cat = getKey(e, CAT_NAMES);
+    items.push({cat:String(cat===undefined?defCat:cat).trim().slice(0,40)||defCat, q:q.slice(0,400), o:opts.map(function(o){ return o.slice(0,120); }), a:ai});
+  });
+  return {items:items, problems:problems};
+}
+
+function fromJsonValue(data, defCat, label){
+  var arr = null;
+  if(Array.isArray(data)) arr = data;
+  else if(data && typeof data==="object"){
+    ["questions","items","data","quiz","results","trivia","list"].some(function(k){ var key = Object.keys(data).filter(function(x){ return nk(x)===k; })[0]; if(key && Array.isArray(data[key])){ arr = data[key]; return true; } return false; });
+    if(!arr){ var vals = Object.keys(data).map(function(k){ return data[k]; }); if(vals.length && vals.every(function(v){ return v && typeof v==="object"; })) arr = vals; }
+  }
+  if(!arr) return {items:[], problems:[(label||"File")+": I couldn't find a list of questions in it"]};
+  return fromObjects(arr, defCat, label);
+}
+
+function parseCsvRows(text){
+  var first = text.split("\n")[0] || "";
+  var delim = [",",";","\t"].map(function(d){ return {d:d, n:first.split(d).length}; }).sort(function(a,b){ return b.n-a.n; })[0].d;
+  var rows = [], row = [], cell = "", q = false;
+  for(var i=0;i<text.length;i++){
+    var c = text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){ cell += '"'; i++; } else q = false; } else cell += c; }
+    else if(c==='"') q = true;
+    else if(c===delim){ row.push(cell); cell = ""; }
+    else if(c==="\n"){ row.push(cell); rows.push(row); row = []; cell = ""; }
+    else if(c!=="\r") cell += c;
+  }
+  if(cell!=="" || row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(function(r){ return r.some(function(x){ return String(x).trim()!==""; }); });
+}
+function fromCsv(text, defCat, label){
+  var rows = parseCsvRows(text);
+  if(rows.length<1) return {items:[], problems:[(label||"File")+": it looks empty"]};
+  var head = rows[0].map(nk), hasHead = head.some(function(h){ return Q_NAMES.indexOf(h)>=0; });
+  var objs = [];
+  if(hasHead){
+    rows.slice(1).forEach(function(r){ var o = {}; rows[0].forEach(function(h,i){ o[h] = (r[i]===undefined?"":r[i]); }); objs.push(o); });
+  } else {
+    rows.forEach(function(r){
+      if(r.length>=7) objs.push({category:r[0], question:r[1], A:r[2], B:r[3], C:r[4], D:r[5], answer:r[6]});
+      else if(r.length>=6) objs.push({question:r[0], A:r[1], B:r[2], C:r[3], D:r[4], answer:r[5]});
+    });
+  }
+  return fromObjects(objs, defCat, label);
+}
+
+function parseTextQuestions(raw, defCat, label){
+  var items = [], problems = [], cat = defCat, pending = [], cur = null;
+  var text = raw.replace(/\r/g,"").replace(/\\([.\-()#*_!])/g,"$1").replace(/\*\*|__/g,"").replace(/\u00a0/g," ");
+  var lines = text.split("\n");
+  function cleanCat(s){ return s.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]/gu,"").replace(/\(\s*\d+\s*[\u2013\u2014\-]\s*\d+\s*\)/g,"").replace(/^[#\s:\-\u2013\u2014]+|[#\s:\-\u2013\u2014]+$/g,"").trim().slice(0,40); }
+  function finish(c){
+    var t = c.lines.join(" ").replace(/\s+/g," ").trim(), ansStr;
+    var am = t.match(/\b(?:correct\s*answer|answer|ans|correct)\s*[:\-]\s*(.+?)\s*$/i);
+    if(am){ ansStr = am[1].trim(); t = t.slice(0, am.index).trim(); }
+    var pos = [], from = 0;
+    for(var i=0;i<4;i++){
+      var L = "ABCD"[i], r = new RegExp("(?:^|\\s)"+L+"[\\.\\)]\\s+","g"); r.lastIndex = from;
+      var m = r.exec(t); if(!m) break;
+      pos.push({idx:m.index, end:m.index+m[0].length}); from = m.index+m[0].length;
+    }
+    var tag = (label?label+" ":"")+"Q"+c.num;
+    if(pos.length<4){ problems.push(tag+": needs four options (A, B, C, D)"); return; }
+    var q = t.slice(0,pos[0].idx).trim(), opts = [];
+    for(var j=0;j<4;j++) opts.push(t.slice(pos[j].end, j<3 ? pos[j+1].idx : t.length).trim());
+    var low = opts.map(normText);
+    if(!q || low.some(function(o,i){ return !o || low.indexOf(o)!==i; })){ problems.push(tag+": I couldn't read the options properly"); return; }
+    var obj = {num:c.num, cat:c.cat, q:q.slice(0,400), o:opts.map(function(o){ return o.slice(0,120); }), a:-1};
+    if(ansStr!==undefined){
+      obj.a = resolveAnswer(ansStr, obj.o, false);
+      if(obj.a<0){ problems.push(tag+": can't match the answer \""+ansStr.slice(0,30)+"\" to an option"); return; }
+      items.push({cat:obj.cat, q:obj.q, o:obj.o, a:obj.a});
+    } else pending.push(obj);
+  }
+  function closeCur(){ if(cur){ finish(cur); cur = null; } }
+  function flushPending(){ pending.forEach(function(p){ problems.push((label?label+" ":"")+"Q"+p.num+": no answer found"); }); pending = []; }
+  for(var li=0; li<lines.length; li++){
+    var ln = lines[li], tr = ln.trim();
+    if(!tr){ continue; }
+    var rm = tr.match(/^#*\s*(?:[^\w\s]\s*)*Round\s*\d+\s*[:\-\u2013\u2014.]?\s*(.*)$/i);
+    var cm = tr.match(/^(?:category|topic|section)\s*[:\-]\s*(.+)$/i);
+    if(rm){ closeCur(); flushPending(); var c1 = cleanCat(rm[1]); if(c1) cat = c1; continue; }
+    if(cm){ closeCur(); var c2 = cleanCat(cm[1]); if(c2) cat = c2; continue; }
+    if(/^(?:#+\s*)?answer\s*keys?\b/i.test(tr)){
+      closeCur();
+      var keyText = tr;
+      var jj = li+1;
+      while(jj<lines.length){
+        var nx = lines[jj];
+        if(!nx.trim()){ jj++; continue; }
+        if(/\d+\s*[\-\u2013\u2014:.)]\s*[A-Da-d]\b/.test(nx) && !/^\s*\d+\s*[\.\)]\s+\S{2}/.test(nx)){ keyText += " "+nx; li = jj; jj++; continue; }
+        break;
+      }
+      var map = {}, km, re = /(\d{1,4})\s*[\-\u2013\u2014:.)]\s*([A-Da-d])\b/g;
+      while((km = re.exec(keyText))) map[km[1]] = km[2].toUpperCase().charCodeAt(0)-65;
+      pending.forEach(function(p){
+        if(map[p.num]!==undefined){ items.push({cat:p.cat, q:p.q, o:p.o, a:map[p.num]}); }
+        else problems.push((label?label+" ":"")+"Q"+p.num+": not in the answer key");
+      });
+      pending = []; continue;
+    }
+    var qm = tr.match(/^(\d{1,4})\s*[\.\):]\s+(\S.*)$/);
+    if(qm){ closeCur(); cur = {num:qm[1], cat:cat, lines:[qm[2]]}; continue; }
+    if(cur) cur.lines.push(tr);
+  }
+  closeCur(); flushPending();
+  return {items:items, problems:problems};
+}
+
+/* Word (.docx) files are zip files: read word/document.xml without any library */
+function readDocxText(buf){
+  var dv = new DataView(buf), u8 = new Uint8Array(buf), eocd = -1;
+  for(var i=u8.length-22;i>=Math.max(0,u8.length-70000);i--){ if(dv.getUint32(i,true)===0x06054b50){ eocd = i; break; } }
+  if(eocd<0) return Promise.reject(new Error("zip"));
+  var count = dv.getUint16(eocd+10,true), p = dv.getUint32(eocd+16,true), found = null;
+  for(var n=0;n<count;n++){
+    if(dv.getUint32(p,true)!==0x02014b50) break;
+    var method = dv.getUint16(p+10,true), csize = dv.getUint32(p+20,true), nlen = dv.getUint16(p+28,true), elen = dv.getUint16(p+30,true), clen = dv.getUint16(p+32,true), off = dv.getUint32(p+42,true);
+    var name = new TextDecoder().decode(u8.subarray(p+46,p+46+nlen));
+    if(name==="word/document.xml"){ found = {method:method, csize:csize, off:off}; break; }
+    p += 46+nlen+elen+clen;
+  }
+  if(!found) return Promise.reject(new Error("nodoc"));
+  var lh = found.off, data = u8.subarray(lh+30+dv.getUint16(lh+26,true)+dv.getUint16(lh+28,true), lh+30+dv.getUint16(lh+26,true)+dv.getUint16(lh+28,true)+found.csize);
+  var xmlP;
+  if(found.method===0) xmlP = Promise.resolve(new TextDecoder().decode(data));
+  else if(typeof DecompressionStream==="undefined") return Promise.reject(new Error("nostream"));
+  else xmlP = new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();
+  return xmlP.then(function(xml){
+    return xml.replace(/<w:tab\/>/g," ").replace(/<w:br[^>]*\/>/g,"\n").replace(/<\/w:p>/g,"\n").replace(/<[^>]+>/g,"")
+      .replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,"&");
+  });
+}
+
+function readOneFile(file, defCat){
+  var label = file.name.length>26 ? file.name.slice(0,23)+"..." : file.name;
+  return file.arrayBuffer().then(function(buf){
+    var u8 = new Uint8Array(buf);
+    if(u8[0]===0x50 && u8[1]===0x4B){
+      return readDocxText(buf).then(function(t){ return parseTextQuestions(t, defCat, label); })
+        .catch(function(){ return {items:[], problems:[label+": I couldn't open this file. If it's Excel, save it as CSV. If it's Word, try saving as .docx or paste the text."]}; });
+    }
+    var text = new TextDecoder("utf-8").decode(u8).replace(/^\uFEFF/,"");
+    var trimmed = text.trim();
+    if(!trimmed) return {items:[], problems:[label+": it's empty"]};
+    if(trimmed[0]==="[" || trimmed[0]==="{"){
+      try{ return fromJsonValue(JSON.parse(trimmed), defCat, label); }catch(e){ /* not JSON after all, read as text */ }
+    }
+    var firstLine = trimmed.split("\n")[0];
+    if(/\.(csv|tsv)$/i.test(file.name) || (/question/i.test(firstLine) && /[,;\t]/.test(firstLine) && !/^\s*\d+[\.\)]/.test(firstLine))) return fromCsv(text, defCat, label);
+    if(u8.length>20 && (u8[0]===0x25 && u8[1]===0x50)) return {items:[], problems:[label+": PDF files can't be read. Copy the text and paste it below."]};
+    return parseTextQuestions(text, defCat, label);
+  });
+}
+
+var impPending = null;
+function showImportPreview(res){
+  var pv = $("imp-preview"); pv.innerHTML = "";
+  impPending = res.items;
+  var cats = {}; res.items.forEach(function(x){ cats[x.cat] = (cats[x.cat]||0)+1; });
+  pv.appendChild(el("p","aq","I found "+res.items.length+" question"+(res.items.length===1?"":"s")+(res.items.length ? " in "+Object.keys(cats).length+" categor"+(Object.keys(cats).length===1?"y":"ies") : "")+"."));
+  if(res.items.length){
+    pv.appendChild(el("p","aa", Object.keys(cats).map(function(k){ return k+" ("+cats[k]+")"; }).join(", ")));
+    res.items.slice(0,2).forEach(function(x){ pv.appendChild(el("p","aa","Example: "+x.q+"  Answer: "+x.o[x.a])); });
+  }
+  if(res.problems.length){
+    pv.appendChild(el("p","aq","I skipped "+res.problems.length+":"));
+    res.problems.slice(0,6).forEach(function(t){ pv.appendChild(el("p","aa","- "+t)); });
+    if(res.problems.length>6) pv.appendChild(el("p","aa","...and "+(res.problems.length-6)+" more."));
+  }
+  var row = el("div","row"); row.style.marginTop = "10px";
+  if(res.items.length){
+    var add = el("button","btn","Add "+res.items.length+" question"+(res.items.length===1?"":"s")); add.type = "button"; add.id = "imp-add";
+    add.style.cssText = "padding:10px 20px;min-height:0;font-size:19px";
+    add.addEventListener("click", addImported); row.appendChild(add);
+  }
+  var cn = el("button","btn ghost","Cancel"); cn.type = "button"; cn.style.cssText = "padding:10px 20px;min-height:0;font-size:19px";
+  cn.addEventListener("click", function(){ impPending = null; pv.innerHTML = ""; $("impmsg").textContent = ""; });
+  row.appendChild(cn); pv.appendChild(row);
+}
+function addImported(){
+  var m = $("impmsg"); m.className = "msg";
+  if(!impPending || !impPending.length) return;
+  var have = {}; draft.questions.forEach(function(q){ have[normText(q.q)] = true; });
+  var catMap = {}; draft.questions.forEach(function(q){ catMap[q.cat.toLowerCase()] = q.cat; });
+  var added = 0, dup = 0;
+  impPending.forEach(function(x){
+    var key = normText(x.q);
+    if(have[key]){ dup++; return; }
+    have[key] = true;
+    var cat = catMap[x.cat.toLowerCase()] || x.cat; catMap[cat.toLowerCase()] = cat;
+    draft.questions.push({id:draft.nextId++, cat:cat, q:x.q, o:x.o, a:x.a});
+    added++;
+  });
+  impPending = null; $("imp-preview").innerHTML = "";
+  saveDraft();
+  m.textContent = "Added "+added+" question"+(added===1?"":"s")+(dup ? ". Skipped "+dup+" that were already in the list" : "")+"."+(canPublish() ? " They are live now." : " Sign in under Live site stats to publish them.");
+  m.classList.add(added>0 ? "ok" : "err");
+}
+function runImport(promises){
+  var m = $("impmsg"); m.className = "msg"; m.textContent = "Reading...";
+  Promise.all(promises).then(function(list){
+    var all = {items:[], problems:[]};
+    list.forEach(function(r){ all.items = all.items.concat(r.items); all.problems = all.problems.concat(r.problems); });
+    m.textContent = ""; showImportPreview(all);
+  }).catch(function(){ m.textContent = "Couldn't read that. Try pasting the text below."; m.classList.add("err"); });
+}
+function importDefaultCat(){ return ($("imp-cat").value.trim() || "General").slice(0,40); }
+$("imp-q").addEventListener("change", function(){
+  var files = Array.prototype.slice.call(this.files||[]), input = this;
+  if(!files.length) return;
+  var dc = importDefaultCat();
+  runImport(files.map(function(f){ return readOneFile(f, dc); }));
+  input.value = "";
+});
+$("imp-read").addEventListener("click", function(){
+  var t = $("imp-paste").value;
+  if(!t.trim()){ var m = $("impmsg"); m.className = "msg err"; m.textContent = "Paste your questions in the box first."; return; }
+  var dc = importDefaultCat(), trimmed = t.trim(), res = null;
+  if(trimmed[0]==="[" || trimmed[0]==="{"){ try{ res = fromJsonValue(JSON.parse(trimmed), dc, "Pasted text"); }catch(e){ res = null; } }
+  if(!res) res = parseTextQuestions(t, dc, "");
+  runImport([Promise.resolve(res)]);
 });
 
 /* =====================================================================
