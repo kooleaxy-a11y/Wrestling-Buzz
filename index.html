@@ -371,6 +371,23 @@ details.mod summary{cursor:pointer;font-weight:600}
 .lblv{font-size:13px;color:var(--steel);white-space:nowrap}
 .lbscore{font-family:var(--display);font-weight:400;font-size:22px;min-width:44px;text-align:right}
 .lblist .hint{padding:14px}
+.chklist{margin-top:10px;display:grid;gap:8px}
+.chkrow{display:flex;gap:10px;align-items:flex-start;background:var(--ring);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.chkrow input[type=checkbox]{width:22px;height:22px;flex:none;margin-top:4px}
+.chkbody{flex:1;min-width:0}
+.chkhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+.chkcat{font-size:13px;color:var(--steel)}
+.chip2{display:inline-block;border-radius:6px;padding:2px 10px;font-weight:800;font-size:13px}
+.chip2.st-ready{background:rgba(63,191,127,.2);color:var(--good)}
+.chip2.st-review{background:rgba(237,186,62,.18);color:var(--gold)}
+.chip2.st-wrong,.chip2.st-blocked{background:rgba(224,27,50,.2);color:#FF5468}
+.chip2.st-new{background:var(--line);color:var(--steel)}
+.chkrow.st-ready{border-color:var(--good)} .chkrow.st-wrong,.chkrow.st-blocked{border-color:var(--crimson)} .chkrow.st-review{border-color:var(--gold)}
+.chkwarn{color:#FF5468;font-size:14px;margin-top:4px;font-weight:600}
+.chkflag{color:var(--gold);font-size:14px;margin-top:4px;font-weight:600}
+.chklink{display:inline-block;margin-top:6px;color:var(--rope);font-size:14px;overflow-wrap:anywhere}
+.verdict2{border:1px solid var(--gold);background:rgba(237,186,62,.1);border-radius:10px;padding:12px 14px;margin:12px 0 8px;font-weight:600}
+.verdict2.ok{border-color:var(--good);background:rgba(63,191,127,.12)}
 </style>
 </head>
 <body>
@@ -791,6 +808,19 @@ details.mod summary{cursor:pointer;font-weight:600}
       <div class="row" style="margin-top:12px"><button class="btn ghost" id="imp-read" type="button" style="padding:10px 20px;min-height:0;font-size:19px">Read the pasted text</button></div>
       <p class="msg" id="impmsg" role="status"></p>
       <div id="imp-preview"></div>
+    </div>
+
+    <div class="panel apanel" id="qc-panel">
+      <h3 style="margin-top:0">Question checker</h3>
+      <p class="hint" style="margin:-4px 0 10px">Looks for wrong or unclear questions already on the site. It checks the answers against Wikipedia and shows a source link for each, so you can confirm in seconds. It's a helper, not a guarantee. Always open the source for anything marked "Needs review".</p>
+      <div class="row" style="margin-top:0">
+        <button class="btn" id="qc-run" type="button" style="padding:10px 18px;min-height:0;font-size:18px">Check all questions</button>
+        <button class="btn ghost" id="qc-stop" type="button" hidden style="padding:10px 18px;min-height:0;font-size:18px">Stop</button>
+      </div>
+      <p class="hint" id="qc-prog"></p>
+      <p class="aq" id="qc-summary"></p>
+      <label class="chk"><input type="checkbox" id="qc-all"> Show the ready ones too</label>
+      <div class="chklist" id="qc-list"></div>
     </div>
 
     <div class="panel apanel">
@@ -3142,38 +3172,184 @@ function readOneFile(file, defCat){
   });
 }
 
-var impPending = null;
+/* ---------- question checker: basic checks + fact check against Wikipedia ---------- */
+var STOPW = {};
+("who which what when where how many much did does was were is are the a an of in at on to for by with from as and or that this these those first ever won win wins winner defeated defeat beat after before during into than then also their his her its it be been being has have had not yes one two three named called known become became hold holds held").split(" ").forEach(function(w){ STOPW[w] = true; });
+function keyTokens(s){ return normText(s).split(" ").filter(function(w){ return w.length>2 && !STOPW[w]; }); }
+function optTokens(s){ return normText(s).split(" ").filter(function(w){ return w.length>1 && !STOPW[w]; }); }
+
+function structCheck(items, existing){
+  var seen = {}; (existing||[]).forEach(function(q){ seen[normText(q.q)] = true; });
+  var dist = [0,0,0,0], batch = [];
+  items.forEach(function(it){
+    it.errs = []; it.flags = []; it.notes = []; it.st = "new"; it.src = null; it.alt = null;
+    var nq = normText(it.q), opts = it.o.map(normText);
+    if(it.q.trim().length<12) it.errs.push("The question is very short");
+    if(opts.length!==4 || opts.some(function(o){ return !o; })) it.errs.push("Needs four filled-in options");
+    else if(opts.some(function(o,i){ return opts.indexOf(o)!==i; })) it.errs.push("Two options are the same");
+    if(!(it.a>=0 && it.a<opts.length)) it.errs.push("No correct answer chosen");
+    if(seen[nq]){ it.dup = true; it.errs.push("Already in the quiz (duplicate)"); }
+    seen[nq] = true;
+    var ca = opts[it.a], padded = " "+nq+" ";
+    if(ca && ca.length>=4 && padded.indexOf(" "+ca+" ")>=0) it.flags.push("The correct answer is written inside the question");
+    var named = 0; opts.forEach(function(o,i){ if(i!==it.a && o.length>=4 && padded.indexOf(" "+o+" ")>=0) named++; });
+    if(named) it.flags.push("A wrong option is already named in the question");
+    if(opts.some(function(o){ return /\b(all|none|both) of the above\b|\bnot listed\b/.test(o); })) it.flags.push('Avoid "all/none of the above" options');
+    if(/\b(currently|current|now|latest|today|this year|reigning|at the moment)\b/i.test(it.q)) it.notes.push("Could go out of date");
+    if(/\b(longest|shortest|most|record|youngest|oldest|fastest|only|youngest)\b/i.test(it.q)) it.notes.push("Record claim: records can change");
+    if(it.a>=0 && it.a<4) dist[it.a]++;
+  });
+  if(items.length>=10){
+    var mx = Math.max.apply(null,dist), li = dist.indexOf(mx);
+    if(mx/items.length>0.5) batch.push("Most correct answers ("+mx+" of "+items.length+") are option "+"ABCD"[li]+". Your answer key may be shifted or mixed up. Check it before adding.");
+  }
+  return batch;
+}
+
+function wikiSearch(q){
+  return fetch("https://en.wikipedia.org/w/api.php?action=query&list=search&srlimit=5&srprop=snippet&format=json&origin=*&srsearch="+encodeURIComponent(q))
+    .then(function(r){ if(!r.ok) throw new Error("net"); return r.json(); })
+    .then(function(d){ return (d && d.query && d.query.search) || []; });
+}
+function stripTags(h){ return String(h||"").replace(/<[^>]+>/g," ").replace(/&quot;/g,'"').replace(/&amp;/g,"&").replace(/&#039;/g,"'").replace(/&lt;/g,"<").replace(/&gt;/g,">"); }
+var WEIGHTS = [3,2,2,1,1];
+function evidenceFor(item, optIndex){
+  var opt = item.o[optIndex], kws = keyTokens(item.q).slice(0,6);
+  var phrase = opt.split(/\s+/).length<=8 ? '"'+opt.replace(/"/g,"")+'" ' : "";
+  return wikiSearch(phrase + kws.join(" ")).then(function(res){
+    var ot = optTokens(opt), score = 0, best = null;
+    res.forEach(function(r,i){
+      var text = " "+normText(r.title+" "+stripTags(r.snippet))+" ";
+      var oh = ot.length ? ot.filter(function(t){ return text.indexOf(" "+t+" ")>=0; }).length/ot.length : 0;
+      var qh = kws.filter(function(t){ return text.indexOf(" "+t+" ")>=0; }).length;
+      if(oh>=0.7 && qh>=2){ score += (WEIGHTS[i]||1); if(!best) best = {title:r.title, url:"https://en.wikipedia.org/wiki/"+encodeURIComponent(r.title.replace(/ /g,"_"))}; }
+    });
+    return {score:score, src:best};
+  });
+}
+function factCheckItem(item){
+  if(item.errs.length){ item.st = "blocked"; return Promise.resolve(); }
+  return Promise.all(item.o.map(function(_,i){ return evidenceFor(item, i); })).then(function(ev){
+    var mine = ev[item.a], others = ev.filter(function(_,i){ return i!==item.a; }), maxO = Math.max.apply(null, others.map(function(e){ return e.score; }));
+    var altIdx = -1; ev.forEach(function(e,i){ if(i!==item.a && e.score===maxO && maxO>0) altIdx = i; });
+    item.src = mine.src;
+    if(mine.score>=2 && mine.score>maxO){ item.st = item.flags.length ? "review" : "ready"; }
+    else if(mine.score>=2){ item.st = "review"; item.notes.unshift("Other options appear in the same sources too. Check the source link."); }
+    else if(maxO>=3){ item.st = "wrong"; item.alt = altIdx; item.src = altIdx>=0 ? ev[altIdx].src : null; }
+    else { item.st = "review"; item.notes.unshift("I couldn't confirm this one online. Check it yourself."); }
+  }).catch(function(){ item.st = "review"; item.notes.unshift("Fact check unavailable right now (no connection to Wikipedia)."); });
+}
+function factCheckAll(items, onProgress, shouldStop){
+  var done = 0, idx = 0, total = items.length;
+  return new Promise(function(resolve){
+    function next(){
+      if(shouldStop && shouldStop()){ resolve(); return; }
+      if(idx>=total){ if(done>=total) resolve(); return; }
+      var it = items[idx++];
+      factCheckItem(it).then(function(){ done++; if(onProgress) onProgress(done, total); next(); });
+    }
+    if(!total){ resolve(); return; }
+    for(var w=0; w<Math.min(4,total); w++) next();
+  });
+}
+
+var ST_LABEL = {ready:"Ready", review:"Needs review", wrong:"Likely wrong", blocked:"Blocked", "new":"Not fact-checked"};
+function renderCheckRow(it, opts){
+  var row = el("div","chkrow st-"+it.st);
+  if(opts.checkbox){
+    var cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!it.pick; cb.disabled = it.errs.length>0;
+    cb.setAttribute("aria-label","Add this question"); cb.addEventListener("change", function(){ it.pick = cb.checked; if(opts.onPick) opts.onPick(); });
+    row.appendChild(cb);
+  }
+  var body = el("div","chkbody");
+  var head = el("div","chkhead"); head.appendChild(el("span","chip2 st-"+it.st, ST_LABEL[it.st])); head.appendChild(el("span","chkcat", it.cat||""));
+  body.appendChild(head);
+  body.appendChild(el("p","aq", it.q));
+  body.appendChild(el("p","aa","Marked answer: "+it.o[it.a]));
+  if(it.st==="wrong" && it.alt>=0) body.appendChild(el("p","chkwarn","Sources point to \""+it.o[it.alt]+"\" instead."));
+  it.errs.forEach(function(t){ body.appendChild(el("p","chkwarn",t)); });
+  it.flags.forEach(function(t){ body.appendChild(el("p","chkflag",t)); });
+  it.notes.forEach(function(t){ body.appendChild(el("p","aa",t)); });
+  if(it.src){ var a = el("a","chklink","Source: "+it.src.title); a.href = it.src.url; a.target = "_blank"; a.rel = "noopener"; body.appendChild(a); }
+  if(opts.actions) opts.actions(it, body);
+  row.appendChild(body);
+  return row;
+}
+function verdictText(items, batch){
+  var c = {ready:0, review:0, wrong:0, blocked:0, "new":0};
+  items.forEach(function(it){ c[it.st] = (c[it.st]||0)+1; });
+  var checked = c.ready+c.review+c.wrong+c.blocked>0 && c["new"]===0;
+  var parts = [];
+  if(checked){
+    var ok = c.review===0 && c.wrong===0 && c.blocked===0 && !(batch&&batch.length);
+    parts.push(ok ? "READY: every question passed the checks." : "NOT READY: "+(c.wrong+c.blocked)+" problem"+((c.wrong+c.blocked)===1?"":"s")+" and "+c.review+" to review.");
+    parts.push(c.ready+" ready, "+c.review+" need review, "+c.wrong+" likely wrong, "+c.blocked+" blocked.");
+  } else {
+    parts.push("Basic checks done. Run the fact check before you add these.");
+    parts.push(c["new"]+" waiting for a fact check, "+c.blocked+" blocked.");
+  }
+  return {text:parts.join(" "), ok: checked && c.review===0 && c.wrong===0 && c.blocked===0 && !(batch&&batch.length)};
+}
+
+/* ---------- importer preview with the checker ---------- */
+var impPending = null, checkStop = false;
 function showImportPreview(res){
   var pv = $("imp-preview"); pv.innerHTML = "";
-  impPending = res.items;
-  var cats = {}; res.items.forEach(function(x){ cats[x.cat] = (cats[x.cat]||0)+1; });
-  pv.appendChild(el("p","aq","I found "+res.items.length+" question"+(res.items.length===1?"":"s")+(res.items.length ? " in "+Object.keys(cats).length+" categor"+(Object.keys(cats).length===1?"y":"ies") : "")+"."));
-  if(res.items.length){
-    pv.appendChild(el("p","aa", Object.keys(cats).map(function(k){ return k+" ("+cats[k]+")"; }).join(", ")));
-    res.items.slice(0,2).forEach(function(x){ pv.appendChild(el("p","aa","Example: "+x.q+"  Answer: "+x.o[x.a])); });
+  var items = res.items.map(function(x){ return {cat:x.cat, q:x.q, o:x.o, a:x.a, pick:false}; });
+  var batch = structCheck(items, draft.questions);
+  impPending = {items:items, problems:res.problems, batch:batch};
+  items.forEach(function(it){ if(it.errs.length) it.st = "blocked"; });
+  renderImportPreview();
+}
+function renderImportPreview(){
+  var pv = $("imp-preview"); pv.innerHTML = "";
+  if(!impPending) return;
+  var P = impPending, items = P.items;
+  var v = verdictText(items, P.batch);
+  var box = el("div","verdict2"+(v.ok?" ok":"")); box.appendChild(el("b","",v.text)); pv.appendChild(box);
+  P.batch.forEach(function(t){ pv.appendChild(el("p","chkwarn",t)); });
+  if(P.problems.length){
+    pv.appendChild(el("p","aq","I couldn't read "+P.problems.length+" in the file:"));
+    P.problems.slice(0,5).forEach(function(t){ pv.appendChild(el("p","aa","- "+t)); });
+    if(P.problems.length>5) pv.appendChild(el("p","aa","...and "+(P.problems.length-5)+" more."));
   }
-  if(res.problems.length){
-    pv.appendChild(el("p","aq","I skipped "+res.problems.length+":"));
-    res.problems.slice(0,6).forEach(function(t){ pv.appendChild(el("p","aa","- "+t)); });
-    if(res.problems.length>6) pv.appendChild(el("p","aa","...and "+(res.problems.length-6)+" more."));
+  var prog = el("p","hint",""); prog.id = "imp-prog"; pv.appendChild(prog);
+  var row = el("div","row"); row.style.marginTop = "8px";
+  var need = items.some(function(it){ return it.st==="new"; });
+  if(items.length){
+    var fc = el("button","btn", need ? "Check facts online" : "Check again"); fc.type = "button"; fc.style.cssText = "padding:10px 18px;min-height:0;font-size:18px";
+    fc.addEventListener("click", function(){
+      fc.disabled = true; checkStop = false;
+      items.forEach(function(it){ if(!it.errs.length){ it.st = "new"; it.notes = it.notes.filter(function(n){ return !/couldn't confirm|Other options|Fact check unavailable/.test(n); }); } });
+      factCheckAll(items.filter(function(it){ return !it.errs.length; }), function(d,t){ prog.textContent = "Checking "+d+" of "+t+"..."; }, function(){ return checkStop; })
+        .then(function(){ items.forEach(function(it){ it.pick = (it.st==="ready"); }); renderImportPreview(); });
+    });
+    row.appendChild(fc);
   }
-  var row = el("div","row"); row.style.marginTop = "10px";
-  if(res.items.length){
-    var add = el("button","btn","Add "+res.items.length+" question"+(res.items.length===1?"":"s")); add.type = "button"; add.id = "imp-add";
-    add.style.cssText = "padding:10px 20px;min-height:0;font-size:19px";
-    add.addEventListener("click", addImported); row.appendChild(add);
-  }
-  var cn = el("button","btn ghost","Cancel"); cn.type = "button"; cn.style.cssText = "padding:10px 20px;min-height:0;font-size:19px";
-  cn.addEventListener("click", function(){ impPending = null; pv.innerHTML = ""; $("impmsg").textContent = ""; });
-  row.appendChild(cn); pv.appendChild(row);
+  var addBtn = el("button","btn","Add selected"); addBtn.type = "button"; addBtn.id = "imp-add"; addBtn.style.cssText = "padding:10px 18px;min-height:0;font-size:18px";
+  function upd(){ var n = items.filter(function(it){ return it.pick; }).length; addBtn.textContent = "Add "+n+" selected"; addBtn.disabled = n===0; }
+  addBtn.addEventListener("click", addImported); row.appendChild(addBtn);
+  var sr = el("button","btn ghost","Select all ready"); sr.type = "button"; sr.style.cssText = "padding:10px 18px;min-height:0;font-size:18px";
+  sr.addEventListener("click", function(){ items.forEach(function(it){ it.pick = it.st==="ready"; }); renderImportPreview(); }); row.appendChild(sr);
+  var cn = el("button","btn ghost","Cancel"); cn.type = "button"; cn.style.cssText = "padding:10px 18px;min-height:0;font-size:18px";
+  cn.addEventListener("click", function(){ checkStop = true; impPending = null; pv.innerHTML = ""; $("impmsg").textContent = ""; }); row.appendChild(cn);
+  pv.appendChild(row);
+  var list = el("div","chklist");
+  items.forEach(function(it){ list.appendChild(renderCheckRow(it, {checkbox:true, onPick:upd})); });
+  pv.appendChild(list);
+  upd();
 }
 function addImported(){
   var m = $("impmsg"); m.className = "msg";
-  if(!impPending || !impPending.length) return;
+  if(!impPending) return;
+  var chosen = impPending.items.filter(function(it){ return it.pick && !it.errs.length; });
+  if(!chosen.length) return;
+  var risky = chosen.filter(function(it){ return it.st!=="ready"; }).length;
+  if(risky && !confirm(risky+" of the selected question"+(risky===1?" hasn't":"s haven't")+" been confirmed by the fact check. Add them anyway?")) return;
   var have = {}; draft.questions.forEach(function(q){ have[normText(q.q)] = true; });
   var catMap = {}; draft.questions.forEach(function(q){ catMap[q.cat.toLowerCase()] = q.cat; });
   var added = 0, dup = 0;
-  impPending.forEach(function(x){
+  chosen.forEach(function(x){
     var key = normText(x.q);
     if(have[key]){ dup++; return; }
     have[key] = true;
@@ -3183,9 +3359,51 @@ function addImported(){
   });
   impPending = null; $("imp-preview").innerHTML = "";
   saveDraft();
-  m.textContent = "Added "+added+" question"+(added===1?"":"s")+(dup ? ". Skipped "+dup+" that were already in the list" : "")+"."+(canPublish() ? " They are live now." : " Sign in under Live site stats to publish them.");
+  m.textContent = "Added "+added+" question"+(added===1?"":"s")+(dup ? ". Skipped "+dup+" already in the list" : "")+"."+(canPublish() ? " They are live now." : " Sign in under Live site stats to publish them.");
   m.classList.add(added>0 ? "ok" : "err");
 }
+
+/* ---------- checker for the questions already on the site ---------- */
+var auditItems = [], auditStop = false;
+function startAudit(){
+  var items = draft.questions.map(function(q){ return {id:q.id, cat:q.cat, q:q.q, o:q.o.slice(), a:q.a}; });
+  auditItems = items; auditStop = false;
+  structCheck(items, []);
+  var prog = $("qc-prog"), btn = $("qc-run"); btn.disabled = true; $("qc-stop").hidden = false;
+  prog.textContent = "Checking 0 of "+items.length+"...";
+  factCheckAll(items, function(d,t){ prog.textContent = "Checking "+d+" of "+t+"..."; }, function(){ return auditStop; })
+    .then(function(){ btn.disabled = false; $("qc-stop").hidden = true; prog.textContent = auditStop ? "Stopped." : "Done."; renderAudit(); });
+}
+function renderAudit(){
+  var box = $("qc-list"); box.innerHTML = "";
+  var items = auditItems, c = {ready:0, review:0, wrong:0, blocked:0};
+  items.forEach(function(it){ if(c[it.st]!==undefined) c[it.st]++; });
+  var sum = $("qc-summary"); sum.textContent = items.length ? (c.ready+" ready, "+c.review+" need review, "+c.wrong+" likely wrong, "+c.blocked+" blocked.") : "";
+  var showAll = $("qc-all").checked;
+  items.forEach(function(it){
+    if(!showAll && (it.st==="ready" || it.st==="new")) return;
+    box.appendChild(renderCheckRow(it, {checkbox:false, actions:function(item, body){
+      var acts = el("div","row"); acts.style.marginTop = "8px";
+      var sel = document.createElement("select"); sel.setAttribute("aria-label","Correct answer");
+      item.o.forEach(function(o,i){ var op = el("option","", "Correct: "+"ABCD"[i]+". "+o); op.value = String(i); sel.appendChild(op); });
+      sel.value = String(item.a); sel.style.maxWidth = "100%";
+      var save = el("button","mini","Save answer"); save.type = "button";
+      save.addEventListener("click", function(){
+        var q = draft.questions.filter(function(x){ return x.id===item.id; })[0]; if(!q) return;
+        q.a = parseInt(sel.value,10); item.a = q.a; saveDraft(); item.st = "review"; item.notes = ["Answer changed by you. Run the check again to confirm."]; renderAudit();
+      });
+      var del = el("button","mini","Delete question"); del.type = "button";
+      del.addEventListener("click", function(){
+        if(!confirm("Delete this question from the quiz?")) return;
+        draft.questions = draft.questions.filter(function(x){ return x.id!==item.id; });
+        auditItems = auditItems.filter(function(x){ return x.id!==item.id; }); saveDraft(); renderAudit();
+      });
+      body.appendChild(sel); acts.appendChild(save); acts.appendChild(del); body.appendChild(acts);
+    }}));
+  });
+  if(items.length && !box.childElementCount) box.appendChild(el("p","hint","Nothing to fix. Every question passed."));
+}
+
 function runImport(promises){
   var m = $("impmsg"); m.className = "msg"; m.textContent = "Reading...";
   Promise.all(promises).then(function(list){
@@ -3210,6 +3428,10 @@ $("imp-read").addEventListener("click", function(){
   if(!res) res = parseTextQuestions(t, dc, "");
   runImport([Promise.resolve(res)]);
 });
+
+$("qc-run").addEventListener("click", startAudit);
+$("qc-stop").addEventListener("click", function(){ auditStop = true; });
+$("qc-all").addEventListener("change", renderAudit);
 
 /* =====================================================================
    LIVE SITE STATS (who is online, total users, daily users)
