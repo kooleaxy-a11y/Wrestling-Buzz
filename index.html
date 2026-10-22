@@ -508,7 +508,42 @@ details.mod summary{cursor:pointer;font-weight:600}
 <!-- ===================== CAREER ===================== -->
 <section id="v-career" class="view" aria-label="Your career">
   <h2>Your career</h2>
-  <p class="lead">Earn XP, level up, unlock gimmicks and collect belts. Your progress is saved on this phone.</p>
+  <p class="lead">Earn XP, level up, unlock gimmicks and collect belts. Create a free account to keep your progress on any phone.</p>
+  <div class="panel" id="acct" style="margin-bottom:16px">
+    <div id="acct-off" hidden><p class="hint">Accounts aren't open yet. Your progress is saved on this phone.</p></div>
+    <div id="acct-out" hidden>
+      <h3 style="margin-top:0">Save your progress</h3>
+      <div class="lbtabs" id="acct-tabs" role="group" aria-label="Account">
+        <button type="button" data-mode="signup" aria-pressed="true">Create account</button>
+        <button type="button" data-mode="login" aria-pressed="false">Log in</button>
+      </div>
+      <form id="acct-form" novalidate class="agrid" style="margin-top:12px">
+        <input id="acct-email-in" type="text" inputmode="email" autocomplete="email" placeholder="Email" aria-label="Email">
+        <input id="acct-pw" type="password" placeholder="Password (6 or more characters)" aria-label="Password" autocomplete="new-password">
+        <div class="row" style="margin-top:0"><button class="btn" id="acct-go" type="submit" style="padding:10px 22px;min-height:0;font-size:19px">Create my account</button></div>
+      </form>
+      <button class="mini" id="acct-forgot" type="button" hidden style="margin-top:10px">Forgot password?</button>
+      <p class="hint">We only use your email to log you in and save your progress. Your progress on this phone is kept and merged with your account.</p>
+      <p class="msg" id="acct-msg" role="status"></p>
+    </div>
+    <div id="acct-in" hidden>
+      <p>Logged in as <b id="acct-email"></b></p>
+      <p class="hint" id="acct-sync">Your progress saves to your account automatically.</p>
+      <div class="row" style="margin-top:10px">
+        <button class="btn ghost" id="acct-sync-btn" type="button" style="padding:8px 16px;min-height:0;font-size:17px">Sync now</button>
+        <button class="btn ghost" id="acct-logout" type="button" style="padding:8px 16px;min-height:0;font-size:17px">Log out</button>
+      </div>
+      <button class="mini" id="acct-delete" type="button" style="margin-top:12px">Delete my saved progress</button>
+    </div>
+    <div id="acct-rec" hidden>
+      <h3 style="margin-top:0">Choose a new password</h3>
+      <form id="acct-rec-form" novalidate class="agrid">
+        <input id="acct-newpw" type="password" placeholder="New password (6 or more characters)" aria-label="New password" autocomplete="new-password">
+        <div class="row" style="margin-top:0"><button class="btn" type="submit" style="padding:10px 22px;min-height:0;font-size:19px">Save new password</button></div>
+      </form>
+      <p class="msg" id="acct-rec-msg" role="status"></p>
+    </div>
+  </div>
   <div class="panel" id="c-top"></div>
 
   <h3>Gimmicks</h3>
@@ -1345,8 +1380,12 @@ var rx = {ans:0, speed:0}, fastCorrect = 0, levelBefore = 1;
 
 function newProfile(){ return {xp:0, rounds:0, answered:0, correct:0, streak:0, bestStreak:0, lastPlay:"", lastPct:null, badges:{}, pred:{}, unlocked:{}, hit7:false, survBest:0, lastSpin:"", shared:{}}; }
 function loadProfile(){
-  var p = null, d = newProfile();
+  var p = null;
   try{ p = JSON.parse(store(PROF_KEY)||"null"); }catch(e){ p = null; }
+  return sanitizeProfile(p);
+}
+function sanitizeProfile(p){
+  var d = newProfile();
   if(p && typeof p==="object"){
     ["xp","rounds","answered","correct","streak","bestStreak"].forEach(function(k){
       if(typeof p[k]==="number" && isFinite(p[k]) && p[k]>=0) d[k] = Math.floor(p[k]);
@@ -1371,7 +1410,7 @@ function loadProfile(){
   return d;
 }
 var PROF = loadProfile();
-function saveProfile(){ store(PROF_KEY, JSON.stringify(PROF)); scheduleScoreSubmit(); }
+function saveProfile(){ store(PROF_KEY, JSON.stringify(PROF)); scheduleScoreSubmit(); scheduleCloudSave(); }
 
 function levelFor(xp){ var L = LEVELS[0]; LEVELS.forEach(function(l){ if(xp>=l.xp) L = l; }); return L; }
 function nextLevel(l){ return LEVELS[l.n] || null; }
@@ -1489,6 +1528,7 @@ function renderXpBox(total){
     box.appendChild(el("div","unlock bdg","New badge: "+b.name+". "+b.desc));
   });
   checkUnlocks().forEach(function(l){ box.appendChild(el("div","unlock","New section unlocked: "+l.name)); });
+  savePrompt(box);
 }
 
 /* career page */
@@ -1703,6 +1743,7 @@ function finishSurvival(){
   }
   earned.forEach(function(id){ var b = badgeInfo(id); box.appendChild(el("div","unlock bdg","New badge: "+b.name+". "+b.desc)); });
   checkUnlocks().forEach(function(l){ box.appendChild(el("div","unlock","New section unlocked: "+l.name)); });
+  savePrompt(box);
 
   var left = unseen().length;
   $("again").hidden = left===0;
@@ -1912,7 +1953,7 @@ function seenSet(){
   try{ return JSON.parse(store(SEEN_KEY)||"[]"); }catch(e){ return []; }
 }
 function markSeen(id){
-  var s = seenSet(); if(s.indexOf(id)<0){ s.push(id); store(SEEN_KEY, JSON.stringify(s)); }
+  var s = seenSet(); if(s.indexOf(id)<0){ s.push(id); store(SEEN_KEY, JSON.stringify(s)); scheduleCloudSave(); }
 }
 function unseen(){
   var s = seenSet();
@@ -2423,7 +2464,7 @@ function getPicks(evId){ var a = getAllPicks()[evId]; return Array.isArray(a) ? 
 function setPick(evId, i, idx, n){
   var all = getAllPicks(), arr = Array.isArray(all[evId]) ? all[evId] : [];
   while(arr.length<n) arr.push(null);
-  arr[i] = idx; all[evId] = arr; store(PICKS_KEY, JSON.stringify(all));
+  arr[i] = idx; all[evId] = arr; store(PICKS_KEY, JSON.stringify(all)); scheduleCloudSave();
 }
 
 function evState(ev){
@@ -3519,6 +3560,7 @@ function drawStats(st){
   box.appendChild(statCard("Came back later", st.returning));
   box.appendChild(statCard("Played a quiz round", st.played));
   box.appendChild(statCard("Installed the app", st.app_users));
+  if(st.accounts!==undefined) box.appendChild(statCard("Player accounts", st.accounts));
 
   var where = $("stats-where"); where.innerHTML = "";
   var pages = Object.keys(st.online_by_page||{}).map(function(k){ return {k:k, v:st.online_by_page[k]}; }).sort(function(a,b){ return b.v-a.v; });
@@ -3826,6 +3868,212 @@ function maybeUploadImage(dataUrl){
     if(!r.ok) throw new Error("upload");
     return SUPABASE_URL+"/storage/v1/object/public/images/"+name;
   }).catch(function(){ return dataUrl; });
+}
+
+/* =====================================================================
+   PLAYER ACCOUNTS: sign up / log in to save progress on any phone
+   Uses Supabase sign-in. Progress (XP, badges, streaks, seen questions, picks) is saved to the player's own row.
+   ===================================================================== */
+var SESSION_KEY = "wb_session_v1", cloudTimer = 0, cloudBusy = false, acctMode = "signup", recoveryToken = "";
+
+function readSession(){ try{ var s = JSON.parse(store(SESSION_KEY)||"null"); return (s && s.access_token && s.uid) ? s : null; }catch(e){ return null; } }
+function writeSession(j, userOverride){
+  var u = userOverride || j.user || {};
+  var s = {access_token:j.access_token, refresh_token:j.refresh_token||"", expires_at:j.expires_at || (Math.floor(Date.now()/1000)+(j.expires_in||3600)), uid:u.id||"", email:u.email||""};
+  store(SESSION_KEY, JSON.stringify(s)); return s;
+}
+function clearSession(){ try{ localStorage.removeItem(SESSION_KEY); }catch(e){} }
+function authHeaders(extra){ var h = {"apikey":SUPABASE_KEY, "Content-Type":"application/json"}; if(extra) Object.keys(extra).forEach(function(k){ h[k] = extra[k]; }); return h; }
+function authError(j){ return (j && (j.msg || j.error_description || j.message || j.error)) || "Something went wrong. Try again."; }
+
+function getUserToken(){
+  var s = readSession(); if(!s) return Promise.resolve(null);
+  if(s.expires_at - Math.floor(Date.now()/1000) > 60) return Promise.resolve(s.access_token);
+  return fetch(SUPABASE_URL+"/auth/v1/token?grant_type=refresh_token", {method:"POST", headers:authHeaders(), body:JSON.stringify({refresh_token:s.refresh_token})})
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if(j && j.access_token){ return writeSession(j).access_token; } clearSession(); renderAccount(); return null; })
+    .catch(function(){ return null; });
+}
+
+/* ---- what gets saved ---- */
+function snapshot(){
+  return {v:1, prof:PROF, seen:seenSet(), picks:getAllPicks(), name:store(NAME_KEY)||"", gim:store(GIM_KEY)||"", lb:store(LB_NAME_KEY)||"", cid:myId()};
+}
+function maxNum(a,b){ return Math.max(a||0, b||0); }
+function unionDates(x, y){
+  var o = {}; Object.keys(y||{}).forEach(function(k){ o[k] = y[k]; });
+  Object.keys(x||{}).forEach(function(k){ if(!(k in o) || (typeof x[k]==="string" && typeof o[k]==="string" && x[k] < o[k])) o[k] = x[k]; });
+  return o;
+}
+function mergeProf(a, b){
+  var m = newProfile();
+  ["xp","rounds","answered","correct","bestStreak","survBest"].forEach(function(k){ m[k] = maxNum(a[k], b[k]); });
+  var newer = (a.lastPlay||"") >= (b.lastPlay||"") ? a : b;
+  m.streak = newer.streak||0; m.lastPlay = newer.lastPlay||""; m.lastPct = newer.lastPct;
+  m.hit7 = !!(a.hit7 || b.hit7);
+  m.lastSpin = (a.lastSpin||"") > (b.lastSpin||"") ? a.lastSpin : b.lastSpin;
+  m.badges = unionDates(a.badges, b.badges); m.unlocked = unionDates(a.unlocked, b.unlocked); m.shared = unionDates(a.shared, b.shared);
+  m.pred = {};
+  [b.pred||{}, a.pred||{}].forEach(function(src){ Object.keys(src).forEach(function(k){ if(!m.pred[k] || (src[k].xp||0) > (m.pred[k].xp||0)) m.pred[k] = src[k]; }); });
+  return m;
+}
+function applyCloud(cloud){
+  if(!cloud || typeof cloud!=="object") return;
+  PROF = mergeProf(PROF, sanitizeProfile(cloud.prof));
+  store(PROF_KEY, JSON.stringify(PROF));
+  var seen = seenSet(); (cloud.seen||[]).forEach(function(id){ if(typeof id==="number" && seen.indexOf(id)<0) seen.push(id); });
+  store(SEEN_KEY, JSON.stringify(seen));
+  var lp = getAllPicks(), cp = (cloud.picks && typeof cloud.picks==="object") ? cloud.picks : {};
+  Object.keys(cp).forEach(function(k){ if(!Array.isArray(lp[k]) && Array.isArray(cp[k])) lp[k] = cp[k]; });
+  store(PICKS_KEY, JSON.stringify(lp));
+  if(typeof cloud.name==="string" && cloud.name && !store(NAME_KEY)) store(NAME_KEY, cloud.name.slice(0,24));
+  if(typeof cloud.gim==="string" && !store(GIM_KEY)) store(GIM_KEY, cloud.gim.slice(0,30));
+  if(typeof cloud.lb==="string" && cloud.lb && !store(LB_NAME_KEY)) store(LB_NAME_KEY, cloud.lb.slice(0,24));
+  if(typeof cloud.cid==="string" && cloud.cid.length>=8 && cloud.cid.length<=64) store(CHAT_CID_KEY, cloud.cid);   /* one identity on every device */
+}
+
+/* ---- saving and loading ---- */
+function scheduleCloudSave(){
+  if(!statsConfigured() || !readSession() || cloudTimer) return;
+  cloudTimer = setTimeout(function(){ cloudTimer = 0; cloudSave(); }, 4000);
+}
+function setSyncText(t, err){ var e = $("acct-sync"); if(e){ e.textContent = t; e.className = "hint"+(err?" err":""); } }
+function cloudSave(){
+  var s = readSession(); if(!s || cloudBusy) return Promise.resolve();
+  cloudBusy = true;
+  return getUserToken().then(function(tok){
+    if(!tok) throw new Error("auth");
+    return fetch(SUPABASE_URL+"/rest/v1/progress?on_conflict=user_id", {method:"POST",
+      headers:authHeaders({"Authorization":"Bearer "+tok, "Prefer":"resolution=merge-duplicates,return=minimal"}),
+      body:JSON.stringify({user_id:s.uid, data:snapshot(), updated_at:new Date().toISOString()})});
+  }).then(function(r){ if(!r.ok) throw new Error("save"); setSyncText("Saved to your account at "+new Date().toLocaleTimeString()+"."); })
+    .catch(function(e){ setSyncText(e.message==="auth" ? "Please log in again to keep saving." : "Couldn't save to your account just now. Your progress is still on this phone.", true); })
+    .then(function(){ cloudBusy = false; });
+}
+function cloudLoad(){
+  var s = readSession(); if(!s) return Promise.resolve(false);
+  return getUserToken().then(function(tok){
+    if(!tok) return false;
+    return fetch(SUPABASE_URL+"/rest/v1/progress?select=data&user_id=eq."+encodeURIComponent(s.uid), {headers:authHeaders({"Authorization":"Bearer "+tok})})
+      .then(function(r){ if(!r.ok) throw new Error("load"); return r.json(); })
+      .then(function(rows){ if(rows && rows[0] && rows[0].data){ applyCloud(rows[0].data); } return true; });
+  }).catch(function(){ return false; });
+}
+function syncNow(){
+  setSyncText("Syncing...");
+  return cloudLoad().then(function(){ return cloudSave(); }).then(function(){ refreshViews(); submitScore(); });
+}
+function refreshViews(){
+  try{
+    renderAccount(); renderStrip(); buildGimmicks(); renderModes(); refreshStart();
+    var v = currentView();
+    if(v==="career"){ renderCareer(); renderSections(); }
+    if(v==="predict") renderPredict();
+    if(v==="ranks") renderRanks();
+  }catch(e){}
+}
+
+/* ---- the account card ---- */
+function renderAccount(){
+  var off = $("acct-off"), out = $("acct-out"), inn = $("acct-in"), rec = $("acct-rec");
+  if(!statsConfigured()){ off.hidden = false; out.hidden = true; inn.hidden = true; rec.hidden = true; return; }
+  off.hidden = true;
+  var s = readSession();
+  rec.hidden = !recoveryToken;
+  out.hidden = !!s || !!recoveryToken;
+  inn.hidden = !s || !!recoveryToken;
+  if(s) $("acct-email").textContent = s.email;
+  document.querySelectorAll("#acct-tabs button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.mode===acctMode ? "true":"false"); });
+  $("acct-go").textContent = acctMode==="signup" ? "Create my account" : "Log in";
+  $("acct-forgot").hidden = acctMode!=="login";
+  $("acct-pw").autocomplete = acctMode==="signup" ? "new-password" : "current-password";
+}
+function acctMsg(t, cls){ var m = $("acct-msg"); m.className = "msg"+(cls?" "+cls:""); m.textContent = t; }
+
+document.querySelectorAll("#acct-tabs button").forEach(function(b){
+  b.addEventListener("click", function(){ acctMode = b.dataset.mode; acctMsg(""); renderAccount(); });
+});
+$("acct-form").addEventListener("submit", function(e){
+  e.preventDefault();
+  var email = $("acct-email-in").value.trim(), pw = $("acct-pw").value;
+  if(!/^\S+@\S+\.\S+$/.test(email)) return acctMsg("Enter a valid email address.", "err");
+  if(pw.length<6) return acctMsg("Your password needs at least 6 characters.", "err");
+  var btn = $("acct-go"); btn.disabled = true; acctMsg("One moment...");
+  var path = acctMode==="signup" ? "/auth/v1/signup" : "/auth/v1/token?grant_type=password";
+  fetch(SUPABASE_URL+path, {method:"POST", headers:authHeaders(), body:JSON.stringify({email:email, password:pw})})
+    .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+    .then(function(x){
+      if(x.j && x.j.access_token){
+        writeSession(x.j); $("acct-pw").value = ""; acctMsg("");
+        return syncNow().then(function(){ toast(acctMode==="signup" ? "Account created. Your progress is saved." : "Logged in. Your progress is synced."); });
+      }
+      if(acctMode==="signup" && x.ok){ acctMsg("Almost done. Check your email and tap the confirmation link, then come back and log in.", "ok"); return; }
+      acctMsg(authError(x.j), "err");
+    })
+    .catch(function(){ acctMsg("Couldn't reach the server. Check your connection and try again.", "err"); })
+    .then(function(){ btn.disabled = false; });
+});
+$("acct-forgot").addEventListener("click", function(){
+  var email = $("acct-email-in").value.trim();
+  if(!/^\S+@\S+\.\S+$/.test(email)) return acctMsg("Type your email above first, then tap Forgot password.", "err");
+  fetch(SUPABASE_URL+"/auth/v1/recover", {method:"POST", headers:authHeaders(), body:JSON.stringify({email:email})})
+    .then(function(r){ return r.ok ? acctMsg("If that email has an account, we've sent a link to reset the password.", "ok") : r.json().then(function(j){ acctMsg(authError(j), "err"); }); })
+    .catch(function(){ acctMsg("Couldn't reach the server. Try again.", "err"); });
+});
+$("acct-sync-btn").addEventListener("click", syncNow);
+$("acct-logout").addEventListener("click", function(){
+  var s = readSession();
+  getUserToken().then(function(tok){
+    if(tok) fetch(SUPABASE_URL+"/auth/v1/logout", {method:"POST", headers:authHeaders({"Authorization":"Bearer "+tok})}).catch(function(){});
+  }).catch(function(){}).then(function(){ clearSession(); renderAccount(); toast("Logged out. Your progress stays on this phone."); });
+});
+$("acct-delete").addEventListener("click", function(){
+  var s = readSession(); if(!s) return;
+  if(!confirm("Delete your saved progress from our server and log out? Your progress on this phone stays.")) return;
+  getUserToken().then(function(tok){
+    if(!tok) return;
+    return fetch(SUPABASE_URL+"/rest/v1/progress?user_id=eq."+encodeURIComponent(s.uid), {method:"DELETE", headers:authHeaders({"Authorization":"Bearer "+tok, "Prefer":"return=minimal"})})
+      .then(function(){ return fetch(SUPABASE_URL+"/auth/v1/logout", {method:"POST", headers:authHeaders({"Authorization":"Bearer "+tok})}).catch(function(){}); });
+  }).catch(function(){}).then(function(){ clearSession(); renderAccount(); toast("Your saved progress was deleted."); });
+});
+$("acct-rec-form").addEventListener("submit", function(e){
+  e.preventDefault();
+  var pw = $("acct-newpw").value, m = $("acct-rec-msg"); m.className = "msg";
+  if(pw.length<6){ m.textContent = "Your password needs at least 6 characters."; m.classList.add("err"); return; }
+  fetch(SUPABASE_URL+"/auth/v1/user", {method:"PUT", headers:authHeaders({"Authorization":"Bearer "+recoveryToken}), body:JSON.stringify({password:pw})})
+    .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+    .then(function(x){
+      if(x.ok){ recoveryToken = ""; $("acct-newpw").value = ""; acctMode = "login"; renderAccount(); acctMsg("Password updated. Log in with your new password.", "ok"); }
+      else { m.textContent = authError(x.j); m.classList.add("err"); }
+    }).catch(function(){ m.textContent = "Couldn't reach the server."; m.classList.add("err"); });
+});
+
+/* links from confirmation and password-reset emails arrive as #access_token=...&type=... */
+function handleAuthHash(){
+  var h = location.hash || "";
+  if(h.indexOf("access_token=")<0 || !statsConfigured()) return;
+  var p = {}; h.replace(/^#/,"").split("&").forEach(function(kv){ var i = kv.indexOf("="); if(i>0) p[kv.slice(0,i)] = decodeURIComponent(kv.slice(i+1)); });
+  try{ history.replaceState(null, "", location.pathname+"#career"); }catch(e){ location.hash = "#career"; }
+  if(p.type==="recovery"){ recoveryToken = p.access_token; route(); renderAccount(); return; }
+  if(p.access_token){
+    fetch(SUPABASE_URL+"/auth/v1/user", {headers:authHeaders({"Authorization":"Bearer "+p.access_token})})
+      .then(function(r){ return r.json(); })
+      .then(function(u){ if(u && u.id){ writeSession({access_token:p.access_token, refresh_token:p.refresh_token, expires_in:parseInt(p.expires_in,10)||3600}, u); syncNow().then(function(){ toast("Email confirmed. You're logged in."); }); } })
+      .catch(function(){});
+  }
+}
+handleAuthHash();
+window.addEventListener("hashchange", handleAuthHash);
+
+renderAccount();
+if(statsConfigured() && readSession()) cloudLoad().then(function(ok){ if(ok){ refreshViews(); cloudSave(); } });
+
+/* gentle nudge after a round */
+function savePrompt(box){
+  if(!statsConfigured() || readSession()) return;
+  var d = el("div","unlock","Save your progress on any phone: create a free account on the Career page.");
+  var a = el("a","sbtn","Create account"); a.href = "#career"; a.style.marginTop = "8px"; a.style.display = "inline-block";
+  d.appendChild(el("br")); d.appendChild(a); box.appendChild(d);
 }
 
 /* the Chat tab stays hidden until the chat is set up (SUPABASE_URL and SUPABASE_KEY above) */
