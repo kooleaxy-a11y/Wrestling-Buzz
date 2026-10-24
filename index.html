@@ -388,6 +388,27 @@ details.mod summary{cursor:pointer;font-weight:600}
 .chklink{display:inline-block;margin-top:6px;color:var(--rope);font-size:14px;overflow-wrap:anywhere}
 .verdict2{border:1px solid var(--gold);background:rgba(237,186,62,.1);border-radius:10px;padding:12px 14px;margin:12px 0 8px;font-weight:600}
 .verdict2.ok{border-color:var(--good);background:rgba(63,191,127,.12)}
+.watch{margin-bottom:26px}
+.wh{margin-bottom:12px}
+.wplayer{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#000;border:1px solid var(--line)}
+.wplayer iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.wthumb{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:#000;cursor:pointer}
+.wthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.wthumb:hover img{filter:brightness(1.12)}
+.wplay{position:absolute;left:50%;top:50%;width:76px;height:54px;margin:-27px 0 0 -38px;background:var(--crimson);border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 22px rgba(0,0,0,.5)}
+.wplay svg{width:32px;height:32px}
+.wtitle{font-family:var(--display);font-size:25px;letter-spacing:.02em;line-height:1.15;margin-top:12px}
+.wmeta{color:var(--steel);font-size:15px;margin-top:4px}
+.wnote{margin-top:6px}
+.wyt{display:inline-block;margin-top:10px;color:var(--rope);font-weight:700;font-size:15px}
+.wmoreh{margin:22px 0 8px !important}
+.wlist{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity}
+.wcard{flex:0 0 150px;text-align:left;background:transparent;border:0;padding:0;cursor:pointer;color:var(--rope);scroll-snap-align:start}
+.wcard img{width:150px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block}
+.wct{display:block;font-size:14px;font-weight:600;margin-top:6px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.vrow{display:flex;gap:12px;align-items:flex-start}
+.vthumb{width:104px;height:58px;object-fit:cover;border-radius:8px;flex:none}
+.vbody{flex:1;min-width:0}
 </style>
 </head>
 <body>
@@ -396,7 +417,7 @@ details.mod summary{cursor:pointer;font-weight:600}
   <div class="wrap">
     <a class="logo" href="#quiz">WRESTLING <b>BUZZ</b></a>
     <nav aria-label="Main">
-      <a href="#quiz" data-nav="quiz">Quiz</a>
+      <a href="#quiz" data-nav="quiz">Home</a>
       <a href="#predict" data-nav="predict">Predict</a>
       <a href="#career" data-nav="career">Career</a>
       <a href="#ranks" data-nav="ranks">Ranks</a>
@@ -418,7 +439,20 @@ details.mod summary{cursor:pointer;font-weight:600}
 <main class="wrap">
 
 <!-- ===================== QUIZ ===================== -->
-<section id="v-quiz" class="view" aria-label="WWE quiz">
+<section id="v-quiz" class="view" aria-label="Home">
+
+  <!-- latest highlights, posted by admins -->
+  <div class="watch" id="watch" hidden>
+    <h2 class="wh">Watch the highlights</h2>
+    <div class="wplayer" id="w-player"></div>
+    <p class="wtitle" id="w-title"></p>
+    <p class="wmeta" id="w-meta"></p>
+    <p class="wnote" id="w-note" hidden></p>
+    <a class="wyt" id="w-yt" target="_blank" rel="noopener">Watch on YouTube</a>
+    <h3 class="wmoreh" id="w-more">More videos</h3>
+    <div class="wlist" id="w-list"></div>
+  </div>
+
 
   <!-- step 1: entrance -->
   <div id="q-setup" class="panel">
@@ -809,6 +843,25 @@ details.mod summary{cursor:pointer;font-weight:600}
         <div id="lbadm-list"></div>
         <p class="msg" id="lbadm-msg" role="status"></p>
       </div>
+    </div>
+
+    <div class="panel apanel" id="vid-panel">
+      <h3 style="margin-top:0">Watch: YouTube highlights</h3>
+      <p class="hint" style="margin:-4px 0 10px">Paste a YouTube link and the video appears at the top of the home page. It plays in YouTube's own player, so the channel keeps the views and credit. If the owner has switched off embedding, visitors can use the "Watch on YouTube" button.</p>
+      <form id="addvid" novalidate class="agrid">
+        <div><label class="f" for="vd-url">YouTube link</label>
+          <input id="vd-url" type="text" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+          <div class="prev" id="vd-prev" hidden><img id="vd-prev-img" alt="Video thumbnail"></div></div>
+        <div><label class="f" for="vd-title">Title</label><input id="vd-title" type="text" maxlength="120" placeholder="Shown above the video"></div>
+        <div><label class="f" for="vd-channel">Channel or credit</label><input id="vd-channel" type="text" maxlength="60" placeholder="e.g. WWE"></div>
+        <div><label class="f" for="vd-note">Short note (optional)</label><input id="vd-note" type="text" maxlength="160" placeholder="One line about the video"></div>
+        <label class="chk"><input type="checkbox" id="vd-pin"> Pin to the top</label>
+        <label class="chk"><input type="checkbox" id="vd-rights"> This is a public YouTube video and I'm sharing it with credit to its channel.</label>
+        <div class="row" style="margin-top:0"><button class="btn" type="submit">Add video</button></div>
+        <p class="msg" id="vd-msg" role="status"></p>
+      </form>
+      <h4 class="sth">On the site (<span id="vcount">0</span>)</h4>
+      <div id="vlist"></div>
     </div>
 
     <div class="panel apanel">
@@ -1809,18 +1862,20 @@ function validContentBase(j){
 function validContent(j){
   if(!validContentBase(j)) return false;
   if(j.events){ if(!Array.isArray(j.events)) return false; if(!j.events.every(validEvent)) return false; }
+  if(j.videos){ if(!Array.isArray(j.videos)) return false; if(!j.videos.every(validVideo)) return false; }
   return true;
 }
 function normalise(j){
   var maxId = 0; j.questions.forEach(function(q){ if(q.id>maxId) maxId=q.id; });
   (j.news||[]).forEach(function(n){ if(n.id>maxId) maxId=n.id; });
   (j.events||[]).forEach(function(n){ if(n.id>maxId) maxId=n.id; });
-  return { nextId: Math.max(j.nextId||0, maxId+1), questions: j.questions, news: j.news||[], events: j.events||[] };
+  (j.videos||[]).forEach(function(n){ if(n.id>maxId) maxId=n.id; });
+  return { nextId: Math.max(j.nextId||0, maxId+1), questions: j.questions, news: j.news||[], events: j.events||[], videos: j.videos||[] };
 }
 function applyContent(j){
   CONTENT = normalise(clone(j));
   QUESTIONS = CONTENT.questions;
-  renderNews();
+  renderNews(); renderWatch();
   if(location.hash==="#predict") renderPredict();
   if(!$("q-setup").hidden) showSetup();
   if(adminOpen) loadAdmin();
@@ -1845,10 +1900,10 @@ function route(){
   document.querySelectorAll("[data-nav]").forEach(function(a){
     if(a.getAttribute("data-nav")===h) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current");
   });
-  var names = {quiz:"WWE Quiz", predict:"Predict", career:"Your career", ranks:"Leaderboard", chat:"Locker Room", trending:"Trending", contact:"Message us", admin:"Admin"};
+  var names = {quiz:"Wrestling Buzz", predict:"Predict", career:"Your career", ranks:"Leaderboard", chat:"Locker Room", trending:"Trending", contact:"Message us", admin:"Admin"};
   document.title = names[h] + " | Wrestling Buzz";
   adminOpen = (h==="admin");
-  if(h!=="quiz") stopTimer();
+  if(h!=="quiz"){ stopTimer(); stopWatch(); }
   if(adminOpen) showAdminGate();
   clearInterval(chatTimer); chatTimer = 0;
   clearInterval(statsTimer); statsTimer = 0;
@@ -1997,6 +2052,7 @@ function showSetup(){
   stopTimer();
   buildGimmicks(); renderStrip(); renderModes();
   $("q-setup").hidden=false; $("q-play").hidden=true; $("q-end").hidden=true;
+  renderWatch();
   var left = unseen().length;
   $("setup-info").textContent = left===0
     ? "You've answered every question we have. New ones are coming, so check back soon."
@@ -2021,10 +2077,12 @@ function startRound(opts){
   else pool = shuffle(unseen()).slice(0, ROUND_SIZE);
   if(!pool.length){ showSetup(); return; }
   round = pool; idx = 0; score = 0; byCat = {}; lives = 3; survCorrect = 0;
+  watchPlaying = false; renderWatch();
   rx = {ans:0, speed:0}; fastCorrect = 0; levelBefore = levelFor(PROF.xp).n;
   $("who").textContent = ringName();
   $("who-g").textContent = (player.name && player.gim) ? player.gim : "";
   $("q-setup").hidden=true; $("q-end").hidden=true; $("q-play").hidden=false;
+  renderWatch();
   showQuestion();
 }
 
@@ -2319,7 +2377,7 @@ function renderAdmin(){
     if(safeImg(n.img)){ var th = document.createElement("img"); th.className = "thumb"; th.alt = ""; th.src = n.img; row.appendChild(th); }
     row.appendChild(b); nl.appendChild(row);
   });
-  renderAdminEvents();
+  renderAdminEvents(); renderAdminVideos();
 }
 
 $("addq").addEventListener("submit", function(e){
@@ -4074,6 +4132,136 @@ function savePrompt(box){
   var d = el("div","unlock","Save your progress on any phone: create a free account on the Career page.");
   var a = el("a","sbtn","Create account"); a.href = "#career"; a.style.marginTop = "8px"; a.style.display = "inline-block";
   d.appendChild(el("br")); d.appendChild(a); box.appendChild(d);
+}
+
+/* =====================================================================
+   WATCH: YouTube highlights on the home page, posted by admins
+   Videos play in YouTube's own player, so views and credit go to the owner.
+   ===================================================================== */
+var watchSel = null, watchPlaying = false;
+
+function parseYouTubeId(input){
+  var t = String(input||"").trim();
+  if(/^[A-Za-z0-9_-]{11}$/.test(t)) return t;
+  var m = t.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/|v\/)|youtube-nocookie\.com\/embed\/)([A-Za-z0-9_-]{11})/i);
+  return m ? m[1] : "";
+}
+function validVideo(v){ return v && typeof v.id==="number" && typeof v.yt==="string" && /^[A-Za-z0-9_-]{11}$/.test(v.yt) && typeof v.title==="string" && v.title.length>0; }
+function thumbUrl(yt){ return "https://i.ytimg.com/vi/"+yt+"/hqdefault.jpg"; }
+function sortedVideos(){
+  return (CONTENT.videos||[]).filter(validVideo).slice().sort(function(a,b){ return (b.pin?1:0)-(a.pin?1:0) || b.id-a.id; });
+}
+function playIcon(){
+  var d = el("span","wplay"); d.setAttribute("aria-hidden","true");
+  d.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="#fff"/></svg>';
+  return d;
+}
+function stopWatch(){ if(watchPlaying){ watchPlaying = false; renderWatch(); } }
+
+function renderWatch(){
+  var box = $("watch"); if(!box) return;
+  var vids = sortedVideos();
+  var onStart = !!$("q-setup") && !$("q-setup").hidden;
+  if(!vids.length || !onStart){ box.hidden = true; if(!onStart) watchPlaying = false; return; }
+  box.hidden = false;
+  var cur = vids.filter(function(v){ return v.id===watchSel; })[0] || vids[0];
+  watchSel = cur.id;
+
+  var pl = $("w-player"); pl.innerHTML = "";
+  if(watchPlaying){
+    var f = document.createElement("iframe");
+    f.src = "https://www.youtube-nocookie.com/embed/"+cur.yt+"?autoplay=1&rel=0&playsinline=1";
+    f.title = cur.title; f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+    f.setAttribute("allowfullscreen",""); f.setAttribute("referrerpolicy","strict-origin-when-cross-origin"); f.loading = "lazy";
+    pl.appendChild(f);
+  } else {
+    var b = el("button","wthumb"); b.type = "button"; b.setAttribute("aria-label","Play: "+cur.title);
+    var im = document.createElement("img"); im.src = thumbUrl(cur.yt); im.alt = ""; im.loading = "lazy"; b.appendChild(im);
+    b.appendChild(playIcon());
+    b.addEventListener("click", function(){
+      watchPlaying = true;
+      if(typeof mOn!=="undefined" && mOn && typeof musOff==="function") musOff();   /* pause the background music while a video plays */
+      renderWatch();
+    });
+    pl.appendChild(b);
+  }
+  $("w-title").textContent = cur.title;
+  var meta = [cur.channel, fmtDate(cur.date)].filter(function(x){ return x; }).join("  |  ");
+  $("w-meta").textContent = meta;
+  $("w-note").textContent = cur.note || ""; $("w-note").hidden = !cur.note;
+  var yt = $("w-yt"); yt.href = "https://www.youtube.com/watch?v="+cur.yt;
+
+  var list = $("w-list"); list.innerHTML = "";
+  var others = vids.filter(function(v){ return v.id!==cur.id; }).slice(0,8);
+  $("w-more").hidden = others.length===0;
+  others.forEach(function(v){
+    var c = el("button","wcard"); c.type = "button";
+    var t = document.createElement("img"); t.src = thumbUrl(v.yt); t.alt = ""; t.loading = "lazy";
+    c.appendChild(t); c.appendChild(el("span","wct", v.title));
+    c.addEventListener("click", function(){ watchSel = v.id; watchPlaying = false; renderWatch(); box.scrollIntoView({behavior:"smooth", block:"start"}); });
+    list.appendChild(c);
+  });
+}
+
+/* ---------------- admin: add and manage videos ---------------- */
+var vidPreview = {yt:"", title:"", channel:""};
+function setVidMsg(t, cls){ var m = $("vd-msg"); m.className = "msg"+(cls?" "+cls:""); m.textContent = t; }
+function vidFromInput(){
+  var id = parseYouTubeId($("vd-url").value);
+  vidPreview.yt = id;
+  var pv = $("vd-prev");
+  if(!id){ pv.hidden = true; return; }
+  $("vd-prev-img").src = thumbUrl(id); pv.hidden = false;
+  /* try to fill in the title and channel automatically */
+  fetch("https://www.youtube.com/oembed?format=json&url="+encodeURIComponent("https://www.youtube.com/watch?v="+id))
+    .then(function(r){ if(!r.ok) throw new Error("no"); return r.json(); })
+    .then(function(j){
+      if(vidPreview.yt!==id) return;
+      if(j.title && !$("vd-title").value.trim()) $("vd-title").value = String(j.title).slice(0,120);
+      if(j.author_name && !$("vd-channel").value.trim()) $("vd-channel").value = String(j.author_name).slice(0,60);
+    }).catch(function(){});
+}
+$("vd-url").addEventListener("input", vidFromInput);
+$("vd-url").addEventListener("change", vidFromInput);
+$("addvid").addEventListener("submit", function(e){
+  e.preventDefault();
+  var yt = parseYouTubeId($("vd-url").value), title = $("vd-title").value.trim();
+  if(!yt) return setVidMsg("That doesn't look like a YouTube video link. Copy the link from YouTube's Share button.", "err");
+  if(!title) return setVidMsg("Add a title for the video.", "err");
+  if(!$("vd-rights").checked) return setVidMsg("Please confirm the video is allowed to be shared here.", "err");
+  draft.videos = draft.videos || [];
+  if(draft.videos.some(function(v){ return v.yt===yt; })) return setVidMsg("That video is already on the site.", "err");
+  var v = {id:draft.nextId++, yt:yt, title:title.slice(0,120), channel:$("vd-channel").value.trim().slice(0,60), note:$("vd-note").value.trim().slice(0,160), date:new Date().toISOString()};
+  if($("vd-pin").checked) v.pin = true;
+  draft.videos.push(v);
+  saveDraft();
+  $("addvid").reset(); $("vd-prev").hidden = true; vidPreview.yt = "";
+  setVidMsg(canPublish() ? "Video added. It's live now on the home page." : "Video added. Sign in under Live site stats to publish it.", "ok");
+});
+
+function renderAdminVideos(){
+  var list = $("vlist"); if(!list) return;
+  list.innerHTML = "";
+  var vids = (draft.videos||[]).slice().sort(function(a,b){ return (b.pin?1:0)-(a.pin?1:0) || b.id-a.id; });
+  $("vcount").textContent = vids.length;
+  vids.forEach(function(v){
+    var row = el("div","arow vrow");
+    var th = document.createElement("img"); th.className = "vthumb"; th.src = thumbUrl(v.yt); th.alt = "";
+    var body = el("div","vbody");
+    var top = el("div","atop");
+    top.appendChild(el("span","cat", v.pin ? "Pinned at the top" : "Video"));
+    var acts = el("div","");
+    var pn = el("button","mini", v.pin ? "Unpin" : "Pin to top"); pn.type = "button"; pn.style.marginRight = "6px";
+    pn.addEventListener("click", function(){ if(v.pin) delete v.pin; else v.pin = true; saveDraft(); });
+    var dl = el("button","mini","Delete"); dl.type = "button";
+    dl.addEventListener("click", function(){ if(confirm("Remove this video from the site?")){ draft.videos = draft.videos.filter(function(x){ return x.id!==v.id; }); saveDraft(); } });
+    acts.appendChild(pn); acts.appendChild(dl); top.appendChild(acts);
+    body.appendChild(top);
+    body.appendChild(el("p","aq", v.title));
+    if(v.channel) body.appendChild(el("p","aa", v.channel));
+    row.appendChild(th); row.appendChild(body); list.appendChild(row);
+  });
+  if(!vids.length) list.appendChild(el("p","hint","No videos yet. Paste a YouTube link above."));
 }
 
 /* the Chat tab stays hidden until the chat is set up (SUPABASE_URL and SUPABASE_KEY above) */
