@@ -713,6 +713,7 @@ select:focus{border-color:var(--gold);outline:none}
       <a href="#ranks" data-nav="ranks">Ranks</a>
       <a href="#chat" data-nav="chat">Chat</a>
       <a href="#trending" data-nav="trending">Trending</a>
+      <a href="#app" data-nav="app" id="nav-app">Get App</a>
       <a href="#contact" data-nav="contact">Message</a>
     </nav>
   </div>
@@ -1048,6 +1049,38 @@ select:focus{border-color:var(--gold);outline:none}
 </section>
 
 <!-- ===================== CONTACT ===================== -->
+<!-- ===================== GET THE APP ===================== -->
+<section id="v-app" class="view" aria-label="Get the Wrestling Buzz app">
+  <div class="panel">
+    <h2>Get the Wrestling Buzz app</h2>
+    <p class="lead" id="app-lead">Play on your phone like a normal app, with its own icon and full screen.</p>
+    <div id="app-done" hidden><p class="msg">You're already using the app. Thanks for installing!</p></div>
+    <div id="app-opts">
+      <div class="install" style="display:block">
+        <b>Android: download the app</b>
+        <p class="hint" style="margin:6px 0 10px" id="app-apk-note">Tap the button, open the downloaded file and tap Install. If Android asks, allow installs from this source. If you see a Play Protect warning, tap Install anyway.</p>
+        <a class="btn" id="app-apk" href="wrestling-buzz.apk" download hidden>DOWNLOAD FOR ANDROID</a>
+        <p class="hint" id="app-apk-soon" hidden>The Android download is coming soon. You can add the app to your home screen below in the meantime.</p>
+      </div>
+      <div class="install" style="display:block;margin-top:14px">
+        <b>Add to your home screen</b>
+        <p class="hint" style="margin:6px 0 10px" id="app-a2hs">Works on Android and iPhone, no download needed.</p>
+        <button class="btn" id="app-inst" type="button" hidden>INSTALL NOW</button>
+        <ol class="hint" id="app-steps-and" style="margin:8px 0 0 18px" hidden>
+          <li>Open this site in Chrome.</li>
+          <li>Tap the menu (three dots) at the top right.</li>
+          <li>Tap Install app or Add to Home screen.</li>
+        </ol>
+        <ol class="hint" id="app-steps-ios" style="margin:8px 0 0 18px" hidden>
+          <li>Open this site in Safari.</li>
+          <li>Tap the Share button.</li>
+          <li>Scroll down and tap Add to Home Screen, then Add.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="v-contact" class="view" aria-label="Message Wrestling Buzz">
   <div class="panel">
     <h2>Message Wrestling Buzz</h2>
@@ -2193,7 +2226,7 @@ try{
    ROUTER
    ===================================================================== */
 var adminOpen = false;
-var VIEWS = ["quiz","promoter","predict","career","ranks","chat","trending","contact","admin"];
+var VIEWS = ["quiz","promoter","predict","career","ranks","chat","trending","contact","app","admin"];
 function route(){
   var h = (location.hash||"#quiz").replace("#","");
   if(h.indexOf("news-")===0) h = "trending";
@@ -2203,7 +2236,7 @@ function route(){
   document.querySelectorAll("[data-nav]").forEach(function(a){
     if(a.getAttribute("data-nav")===h) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current");
   });
-  var names = {quiz:"Wrestling Buzz", promoter:"Promoter Mode", predict:"Predict", career:"Your career", ranks:"Leaderboard", chat:"Locker Room", trending:"Trending", contact:"Message us", admin:"Admin"};
+  var names = {quiz:"Wrestling Buzz", promoter:"Promoter Mode", predict:"Predict", career:"Your career", ranks:"Leaderboard", chat:"Locker Room", trending:"Trending", contact:"Message us", app:"Get the app", admin:"Admin"};
   document.title = names[h] + " | Wrestling Buzz";
   adminOpen = (h==="admin");
   if(h!=="quiz"){ stopTimer(); stopWatch(); }
@@ -2216,6 +2249,7 @@ function route(){
   if(h==="career"){ renderCareer(); renderSections(); }
   if(h==="chat") renderChat();
   if(h==="trending") renderNews();
+  if(h==="app") renderAppPage();
   clearInterval(predTimer); predTimer = 0;
   if(h==="predict"){ renderPredict(); predTimer = setInterval(tickPredict, 1000); }
   if(h==="quiz" && !$("q-setup").hidden) renderStrip();
@@ -2793,6 +2827,33 @@ $("inst-btn").addEventListener("click", function(){
 });
 $("inst-x").addEventListener("click", function(){ store(INSTALL_KEY,"1"); $("install").hidden = true; });
 showInstall();
+
+/* ---- Get App page: Android download + add to home screen ---- */
+var APK_URL = "wrestling-buzz.apk";   /* put the APK file next to index.html on Vercel, or change this to another link */
+var apkChecked = false, apkOk = false;
+function renderAppPage(){
+  var done = isStandalone();
+  $("app-done").hidden = !done; $("app-opts").hidden = done;
+  if(done) return;
+  $("app-apk").href = APK_URL;
+  var ios = isIOS();
+  $("app-inst").hidden = !deferredPrompt;
+  $("app-steps-ios").hidden = !ios || !!deferredPrompt;
+  $("app-steps-and").hidden = ios || !!deferredPrompt;
+  function paint(){ $("app-apk").hidden = !apkOk; $("app-apk-soon").hidden = apkOk; $("app-apk-note").hidden = !apkOk; }
+  if(apkChecked){ paint(); return; }
+  fetch(APK_URL, {method:"HEAD"}).then(function(r){
+    var ct = (r.headers.get("content-type")||"").toLowerCase();
+    apkOk = r.ok && ct.indexOf("text/html")<0; apkChecked = true; paint();
+  }).catch(function(){ apkChecked = true; apkOk = false; paint(); });
+}
+$("app-inst").addEventListener("click", function(){
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(){ deferredPrompt = null; renderAppPage(); });
+});
+window.addEventListener("beforeinstallprompt", function(){ if((location.hash||"")==="#app") renderAppPage(); });
+if(isStandalone()){ var na = $("nav-app"); if(na) na.hidden = true; }
 
 if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
   window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
