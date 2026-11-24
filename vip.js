@@ -29,7 +29,7 @@ function signedIn(){ return !!readSession(); }
 /* ---------- styles ---------- */
 var css = ".vipw{--g:#EDBA3E;--r:#E01B32;--k:#0b0b0d;max-width:920px;margin:0 auto}.vipw *{box-sizing:border-box}"+
 ".vhero{text-align:center;padding:26px 14px;border:1px solid #5a4510;border-radius:16px;background:radial-gradient(circle at 50% 0%,#4a0d17,#0b0b0d 70%);animation:vfade .6s both}"+
-".vhero svg{width:74px;height:74px;filter:drop-shadow(0 0 12px rgba(237,186,62,.5))}.vhero h2{margin:6px 0 2px;font-size:44px;letter-spacing:.06em;color:var(--g)}.vhero h2 b{color:var(--r)}"+
+".vlogo{display:block;width:min(340px,82%);height:auto;margin:0 auto 8px;filter:drop-shadow(0 0 18px rgba(237,186,62,.35));animation:vpop .7s both}.vsr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}@keyframes vpop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}.vhero svg{width:74px;height:74px;filter:drop-shadow(0 0 12px rgba(237,186,62,.5))}.vhero h2{margin:6px 0 2px;font-size:44px;letter-spacing:.06em;color:var(--g)}.vhero h2 b{color:var(--r)}"+
 ".vtag{color:#f0e6cf;letter-spacing:.12em;font-size:13px;font-weight:700}.vgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin:14px 0}"+
 ".vcard{border:1px solid #3a2f12;background:#121014;border-radius:12px;padding:14px;transition:transform .2s,border-color .2s}.vcard:hover{transform:translateY(-2px);border-color:var(--g)}"+
 ".vcard h4{margin:0 0 6px;color:var(--g)}.vcard p{margin:0;font-size:14px;color:#cfc6b4}.vplan{cursor:pointer;text-align:center;border-width:2px}.vplan.on{border-color:var(--g);box-shadow:0 0 16px rgba(237,186,62,.35)}.vplan.off{opacity:.45;cursor:not-allowed}"+
@@ -81,7 +81,9 @@ var BEN = [["badge","Gold VIP badge","A gold crown next to your name on your pro
 
 function draw(w){
   w.innerHTML = ""; var me = VIP.me, pub = VIP.pub;
-  var hero = h("div","vhero"); hero.innerHTML = CROWN; hero.appendChild(h("h2","","BUZZ ")); hero.firstChild.nextSibling.innerHTML = "BUZZ <b>VIP</b>";
+  var hero = h("div","vhero"); var logo = document.createElement("img"); logo.src = "buzz-vip-logo.webp"; logo.alt = "Wrestling Buzz VIP Section"; logo.className = "vlogo"; logo.decoding = "async";
+  logo.onerror = function(){ var c = h("div"); c.innerHTML = CROWN; var t = h("h2"); t.innerHTML = "BUZZ <b>VIP</b>"; logo.replaceWith(c); c.after(t); };
+  hero.appendChild(logo); var sr = h("h2","vsr","BUZZ VIP"); hero.appendChild(sr);
   hero.appendChild(h("p","vtag","UNLOCK MORE. EXPERIENCE MORE. BE ELITE.")); w.appendChild(hero);
   if(me && me.notifications) drawNotes(w, me);
   if(me && me.active) drawDash(w, me); else if(me && me.status==="expired"){ var b = h("div","vbanner warn"); b.appendChild(h("b","","Your BUZZ VIP has expired. ")); b.appendChild(document.createTextNode("Your account, XP, quiz history and achievements are safe. Renew below to get your VIP perks back.")); w.appendChild(b); }
@@ -231,7 +233,7 @@ snap();
 /* ---------- ADMIN: VIP MANAGEMENT inside the existing admin area ---------- */
 var ap = document.getElementById("a-panel");
 if(ap){
-  var ad = h("div","panel apanel"); ad.id = "vip-admin"; ap.appendChild(ad);
+  var ad = h("div","panel apanel"); ad.id = "vip-admin"; ap.insertBefore(ad, document.getElementById("stats-panel")||null);
   var ab = h("div"); ad.appendChild(h("h3","","VIP MANAGEMENT")); ad.appendChild(ab);
   var tabs = [["pay","Payments"],["mem","Members"],["price","Pricing"],["ben","Benefits"],["stat","Analytics"]];
   function adminDraw(){ ab.innerHTML = ""; ab.className = "vipw";
