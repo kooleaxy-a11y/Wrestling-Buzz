@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/card/:id", "destination": "/api/card?id=:id" },
+    { "source": "/join", "destination": "/index.html" }
+  ]
+}
