@@ -5560,7 +5560,10 @@ function musAudioStart(){
     musAudio = new Audio(); musAudio.volume = 0.35;
     if(musMode==="playlist"){
       musAudio.addEventListener("ended", function(){ musIdx = (musIdx+1)%musTracks.length; musLoadTrack(); var q = musAudio.play(); if(q && q.catch) q.catch(function(){}); });
-      musAudio.addEventListener("error", function(){ musMode = "synth"; musAudio = null; if(mOn){ mOn = false; musOn(); } });
+      musAudio.addEventListener("playing", function(){ window.musBad = 0; });
+      musAudio.addEventListener("error", function(){ window.musBad = (window.musBad||0)+1;
+        if(window.musBad <= musTracks.length && musTracks.length > 1){ musIdx = (musIdx+1)%musTracks.length; musLoadTrack(); var q = musAudio.play(); if(q && q.catch) q.catch(function(){}); }
+        else { musMode = "synth"; musAudio = null; if(mOn){ mOn = false; musOn(); } } });
       musLoadTrack();
     } else { musAudio.loop = true; musAudio.src = MUSIC_FILE; }
   }
@@ -5677,12 +5680,11 @@ document.addEventListener("pointerdown", musFirstTap, true);
 document.addEventListener("keydown", musFirstTap, true);
 musSetUI(false);
 
-/* save battery: pause when the tab is hidden */
+/* keep the music flowing when the visitor switches to another app; just make sure sound is running when they come back */
 document.addEventListener("visibilitychange", function(){
-  if(musMode!=="synth" && musAudio){ if(document.hidden) musAudio.pause(); else if(mOn){ var q = musAudio.play(); if(q && q.catch) q.catch(function(){}); } return; }
-  if(!mAc) return;
-  if(document.hidden){ if(mAc.suspend) mAc.suspend(); }
-  else if(mOn && mAc.resume){ mAc.resume(); }
+  if(document.hidden || !mOn) return;
+  if(musMode!=="synth" && musAudio){ var q = musAudio.play(); if(q && q.catch) q.catch(function(){}); return; }
+  if(mAc && mAc.resume) mAc.resume();
 });
 
 route();
@@ -5690,5 +5692,6 @@ route();
 </script>
 <script src="vip.js"></script>
 <script src="legends.js"></script>
+<script src="music-bg.js"></script>
 </body>
 </html>
