@@ -1,8 +1,8 @@
-/* WRESTLING BUZZ FREE WORLD, Phase 2: multiplayer (other managers walk the city with you) on top of the Phase 1 city.
+/* WRESTLING BUZZ FREE WORLD, Phase 3: interactive locations (Buzz Motors, Buzz Fashion, HQ, Arena, Training) on top of Phase 2 multiplayer and the Phase 1 city.
    Needs three.min.js (r128) and fw-core.js, both loaded on demand when a player enters Free World. */
 (function(){
 "use strict";
-var VERSION = "phase-2", GFX_KEY = "wb_fw_gfx", T = null, C = null, A = null;   /* T = THREE, C = FWCore, A = active session */
+var VERSION = "phase-3", GFX_KEY = "wb_fw_gfx", T = null, C = null, A = null;   /* T = THREE, C = FWCore, A = active session */
 function h(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text!==undefined) e.textContent = text; return e; }
 function isTouch(){ return window.matchMedia && matchMedia("(pointer:coarse)").matches; }
 function loadScript(src){ return new Promise(function(ok, no){ var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = function(){ no(new Error("load "+src)); }; document.head.appendChild(s); }); }
@@ -22,7 +22,7 @@ var css = "body.fwlock{overflow:hidden}#fw-root{position:fixed;inset:0;height:10
 "#fw-prompt{position:absolute;left:50%;bottom:calc(215px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:none;white-space:nowrap;font-size:17px;padding:13px 22px;border-radius:14px;background:#E01B32;border:2px solid #fff}#fw-where{pointer-events:none;position:absolute;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:6px 14px;border-radius:99px;background:rgba(10,10,14,.7);font-weight:800;letter-spacing:.06em;font-size:13px;color:#EDBA3E;opacity:0;transition:opacity .4s}"+
 "#fw-load{position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,#4a0d17,#0b0b0d 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:5;text-align:center;padding:20px}#fw-load h2{margin:0;font-size:34px;letter-spacing:.06em;color:#EDBA3E}#fw-load h2 b{color:#fff}.fwbar{width:min(260px,70vw);height:8px;border-radius:5px;background:#26202b;overflow:hidden}.fwbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#E01B32,#EDBA3E);transition:width .25s}"+
 ".fwpanel{position:absolute;inset:0;background:rgba(0,0,0,.72);z-index:4;display:flex;align-items:center;justify-content:center;padding:14px}.fwbox{width:min(380px,100%);background:#101014;border:2px solid #E01B32;border-radius:16px;padding:16px;max-height:90dvh;overflow:auto}.fwbox h3{margin:0 0 10px;color:#EDBA3E}.fwbox p{color:#d8cfbd;font-size:14px;margin:8px 0}.fwbox .fwbtn{display:block;width:100%;margin:8px 0}.fwbox select{width:100%;padding:10px;border-radius:8px;background:#08080a;color:#fff;border:1px solid #4a4a55;font:inherit}"+
-"#fw-map{position:absolute;right:10px;top:calc(66px + env(safe-area-inset-top,0px));width:168px;height:168px;border-radius:12px;border:2px solid #E01B32;background:rgba(10,10,14,.82);display:none}.fwerr{color:#ff7a88;font-weight:700}.fwcard small.fwnet{font-size:11px;color:#9a9aa8}.fwcard small.fwnet.on{color:#7be39b}.fwcard small.fwnet.wait{color:#EDBA3E}.fwcard small.fwnet.bad{color:#ff7a88}";
+"#fw-map{position:absolute;right:10px;top:calc(66px + env(safe-area-inset-top,0px));width:168px;height:168px;border-radius:12px;border:2px solid #E01B32;background:rgba(10,10,14,.82);display:none}.fwerr{color:#ff7a88;font-weight:700}.fwcard small.fwnet{font-size:11px;color:#9a9aa8}.fwcard small.fwnet.on{color:#7be39b}.fwcard small.fwnet.wait{color:#EDBA3E}.fwcard small.fwnet.bad{color:#ff7a88}.fwrow{display:flex;gap:8px}.fwrow .fwbtn{margin:8px 0}.fwtabs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.fwtabs .fwbtn{width:auto;flex:1;margin:0;padding:8px 6px;font-size:13px}.fwitem{display:flex!important;justify-content:space-between;gap:8px;text-align:left}.fwitem span:last-child{color:#EDBA3E;white-space:nowrap}.fwitem.on span:last-child{color:#241600}.fwstat{font-size:13px;color:#d8cfbd;letter-spacing:2px}.fwprice{color:#EDBA3E;font-weight:800;font-size:18px}.fwcv{width:100%;display:block;border-radius:12px;background:linear-gradient(#22222c,#0b0b0f)}";
 var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
 
 /* ---------- 3D helpers (low-poly, shared materials to keep it light) ---------- */
@@ -117,8 +117,10 @@ function makeHuman(o){
   o = o || {}; var g = new T.Group(), skin = o.skin||0xe0ac82, shirt = o.shirt||0xE01B32, pants = o.pants||0x22232b, shoes = o.shoes||0xf2f2f2, hair = o.hair||0x1a1410;
   var body = new T.Group(); g.add(body);
   box(body,0.72,0.95,0.4,M(shirt),0,1.4,0); var head = box(body,0.5,0.5,0.5,M(skin),0,2.18,0); box(body,0.54,0.2,0.54,M(hair),0,2.46,-0.02); box(body,0.5,0.1,0.1,M(0x111111),0,2.2,0.25);
+  if(o.jacket) box(body,0.8,0.8,0.46,M(o.jacket),0,1.42,0);
+  if(o.cap){ box(body,0.58,0.14,0.58,M(o.cap),0,2.58,-0.02); box(body,0.5,0.05,0.3,M(o.cap),0,2.53,0.34); }
   function limb(x, y, w, hh, mat, endMat){ var piv = new T.Group(); piv.position.set(x,y,0); body.add(piv); var m = box(piv,w,hh,w+0.04,mat,0,-hh/2,0); if(endMat) box(piv,w+0.02,0.22,w+0.2,endMat,0,-hh+0.08,0.05); return piv; }
-  var aL = limb(-0.5,1.82,0.22,0.85,M(shirt)), aR = limb(0.5,1.82,0.22,0.85,M(shirt));
+  var aL = limb(-0.5,1.82,0.22,0.85,M(o.jacket||shirt)), aR = limb(0.5,1.82,0.22,0.85,M(o.jacket||shirt));
   [aL,aR].forEach(function(a){ box(a,0.2,0.2,0.22,M(skin),0,-0.9,0); });
   var lL = limb(-0.18,0.95,0.3,0.95,M(pants),M(shoes)), lR = limb(0.18,0.95,0.3,0.95,M(pants),M(shoes));
   var lbl = label(o.name||"Manager", 3.0); lbl.position.set(0,3.15,0); g.add(lbl);
@@ -231,8 +233,10 @@ function addRemote(s, p){
 }
 function removeRemote(s, id){ var n = s.net, r = n && n.remotes[id]; if(!r) return; s.scene.remove(r.mesh); disposeObj(r.mesh); delete n.remotes[id]; refreshNet(s); }
 function clearRemotes(s){ if(!s.net) return; Object.keys(s.net.remotes).forEach(function(id){ removeRemote(s, id); }); }
+function signedIn(){ try{ return typeof readSession === "function" && !!readSession(); }catch(e){ return false; } }
 function netStart(s){
   var url = serverUrl(); if(!url){ netStatus("", "OFFLINE (single player)"); return; }
+  if(!signedIn()){ s.net = {remotes:{}, live:false, closed:true, guest:true, room:null}; netStatus("", "Log in to see other players"); return; }
   s.net = {room:null, remotes:{}, live:false, tries:0, sendT:0, lastSent:null, closed:false, idle:false, myId:0, timer:0};
   netStatus("wait", "Connecting...");
   ensureColyseus().then(function(){ if(s.alive && s.net && !s.net.closed) netJoin(s, url); }).catch(function(){ if(s.alive){ s.net.closed = true; netStatus("bad", "Online play unavailable"); } });
@@ -255,7 +259,7 @@ function netJoin(s, url){
     room.send("hello");
     room.onLeave(function(code){ n.live = false; n.room = null; clearRemotes(s); if(!s.alive || n.closed) return;
       if(code === 4001){ n.idle = true; netStatus("", "Disconnected (idle)"); } else if(code === 4003){ n.closed = true; netStatus("bad", "Signed in somewhere else"); } else if(code === 4002){ n.closed = true; netStatus("bad", "Disconnected by server"); } else netRetry(s); });
-  }).catch(function(){ if(s.alive && !n.closed) netRetry(s); });
+  }).catch(function(e){ if(!s.alive || n.closed) return; if(e && /login_required/.test(String(e.message || e))){ n.closed = true; n.guest = true; netStatus("", "Log in to see other players"); return; } netRetry(s); });
 }
 function netRetry(s){
   var n = s.net; if(!n || n.closed) return; n.tries++;
@@ -291,6 +295,7 @@ function playersPanel(s){
     var n = s.net, names = [((n0(s) && n0(s).name) || userName())+(n0(s) && n0(s).verified ? " \u2713" : "")+" (you)"]; if(n) for(var id in n.remotes) names.push(n.remotes[id].name);
     b.appendChild(h("h3","","Players in Buzz City ("+names.length+")")); names.forEach(function(t, i){ b.appendChild(h("p","",(i+1)+". "+t)); });
     if(!serverUrl()) b.appendChild(h("p","","Multiplayer is switched off because no server address is set yet."));
+    else if(n && n.guest) b.appendChild(h("p","","Log in to your Wrestling Buzz account to walk the city with other players."));
     else if(!n || !n.live){ b.appendChild(h("p","","Not connected to the multiplayer server right now.")); var rt = h("button","fwbtn","Try again"); rt.type = "button"; rt.addEventListener("click", function(){ closePanel(s); netRetryNow(s); }); b.appendChild(rt); }
     var ok = h("button","fwbtn red","Close"); ok.type = "button"; ok.addEventListener("click", function(){ closePanel(s); }); b.appendChild(ok);
   });
@@ -300,11 +305,109 @@ function playersPanel(s){
 function showWhere(s, text){ var w = document.getElementById("fw-where"); if(!w) return; w.textContent = text; w.style.opacity = 1; clearTimeout(s.wt); s.wt = setTimeout(function(){ w.style.opacity = 0; }, 2400); }
 function updatePrompt(s, sp){ var p = document.getElementById("fw-prompt"); if(!p) return; if(sp && sp.interact){ p.textContent = sp.label; p.style.display = "block"; } else p.style.display = "none"; }
 function panel(s, build){ closePanel(s); var p = h("div","fwpanel"); p.id = "fw-panel"; var b = h("div","fwbox"); p.appendChild(b); build(b); s.root.appendChild(p); s.paused = true; }
-function closePanel(s){ var p = document.getElementById("fw-panel"); if(p) p.parentNode.removeChild(p); s.paused = false; }
+function closePanel(s){ if(s.panelCleanup){ try{ s.panelCleanup(); }catch(e){} s.panelCleanup = null; } var p = document.getElementById("fw-panel"); if(p) p.parentNode.removeChild(p); s.paused = false; }
+/* ---------- locations (Phase 3) ---------- */
+function money(n){ return "B "+Number(n).toLocaleString(); }
+function stars(n){ return new Array(n+1).join("\u25A0")+new Array(6-n).join("\u25A1"); }
+function closeBtn(s, b, text){ var ok = h("button","fwbtn red",text||"Close"); ok.type = "button"; ok.addEventListener("click", function(){ closePanel(s); }); b.appendChild(ok); return ok; }
+function infoPanel(s, title, lines, rows){ panel(s, function(b){ b.appendChild(h("h3","",title)); lines.forEach(function(t){ b.appendChild(h("p","",t)); }); (rows||[]).forEach(function(r){ var d = h("div","fwitem fwbtn"); d.style.cursor = "default"; d.appendChild(h("span","",r[0])); d.appendChild(h("span","",r[1])); b.appendChild(d); }); closeBtn(s, b); }); }
+
+/* a small spinning 3D preview that lives inside a panel and is disposed when the panel closes */
+function miniView(s, b, hgt){
+  var cv = h("canvas","fwcv"), W = 340, dpr = Math.min(window.devicePixelRatio||1, 2); cv.width = W*dpr; cv.height = hgt*dpr; cv.style.aspectRatio = W+" / "+hgt; b.appendChild(cv);
+  var r; try{ r = new T.WebGLRenderer({canvas:cv, antialias:true, alpha:true}); }catch(e){ cv.style.display = "none"; return {set:function(){}, dispose:function(){}}; }
+  r.setPixelRatio(1); r.setSize(W*dpr, hgt*dpr, false);
+  var sc = new T.Scene(), cam = new T.PerspectiveCamera(40, W/hgt, 0.1, 60), holder = new T.Group(); sc.add(holder);
+  sc.add(new T.HemisphereLight(0xffffff, 0x555566, 1)); var dl = new T.DirectionalLight(0xfff2d6, 0.7); dl.position.set(3,6,5); sc.add(dl);
+  var floor = new T.Mesh(new T.CylinderGeometry(3.4,3.4,0.1,28), M(0x2a2a34)); floor.position.y = -0.05; sc.add(floor);
+  var mv = {alive:true, raf:0, cur:null};
+  (function loop(){ if(!mv.alive) return; mv.raf = requestAnimationFrame(loop); holder.rotation.y += 0.014; r.render(sc, cam); })();
+  mv.set = function(obj, dist, camY, lookY){ if(mv.cur){ holder.remove(mv.cur); disposeObj(mv.cur); } mv.cur = obj; holder.add(obj); cam.position.set(0, camY, dist); cam.lookAt(0, lookY, 0); };
+  mv.dispose = function(){ mv.alive = false; cancelAnimationFrame(mv.raf); if(mv.cur) disposeObj(mv.cur); disposeObj(floor); try{ r.dispose(); r.forceContextLoss(); }catch(e){} };
+  s.panelCleanup = mv.dispose; return mv;
+}
+
+/* ---- Buzz Motors ---- */
+var CARS = [
+  {name:"Buzz Pup", type:"Hatchback", price:8000, speed:2, handling:4, color:0x27ae60, len:3.4, wid:1.8, bodyH:0.7, cabinLen:2.0, cabinH:0.7, cabinX:-0.15, wheel:0.4},
+  {name:"Rookie Rider", type:"Sedan", price:15000, speed:3, handling:3, color:0x2f6fdb, len:4.3, wid:1.9, bodyH:0.75, cabinLen:2.2, cabinH:0.7, cabinX:-0.2, wheel:0.42},
+  {name:"Tag Team Van", type:"Van", price:30000, speed:2, handling:2, color:0xf2f2f2, len:4.6, wid:2.0, bodyH:0.8, cabinLen:3.6, cabinH:1.1, cabinX:-0.3, wheel:0.45},
+  {name:"Main Event", type:"Coupe", price:40000, speed:4, handling:4, color:0xE01B32, len:4.3, wid:1.9, bodyH:0.65, cabinLen:1.7, cabinH:0.55, cabinX:-0.3, wheel:0.42},
+  {name:"Heavyweight", type:"Pickup", price:55000, speed:3, handling:2, color:0xEDBA3E, len:5.0, wid:2.0, bodyH:0.85, cabinLen:1.8, cabinH:0.8, cabinX:0.9, wheel:0.5, bed:true},
+  {name:"Champion SUV", type:"SUV", price:75000, speed:3, handling:3, color:0x222228, len:4.7, wid:2.0, bodyH:0.95, cabinLen:3.2, cabinH:0.8, cabinX:-0.2, wheel:0.52},
+  {name:"Hall of Fame GT", type:"Sports car", price:150000, speed:5, handling:5, color:0xff7a1a, len:4.5, wid:1.95, bodyH:0.55, cabinLen:1.6, cabinH:0.5, cabinX:-0.25, wheel:0.42, spoiler:true},
+  {name:"Title Belt Limo", type:"Limousine", price:250000, speed:2, handling:1, color:0x101014, len:7.2, wid:1.95, bodyH:0.8, cabinLen:5.2, cabinH:0.65, cabinX:-0.3, wheel:0.44}
+];
+function carModel(c){
+  var g = new T.Group(), w = c.wheel, by = w + c.bodyH/2 - 0.1;
+  box(g, c.len, c.bodyH, c.wid, M(c.color), 0, by, 0);
+  box(g, c.cabinLen, c.cabinH, c.wid-0.15, M(0x1d2a38), c.cabinX, by + c.bodyH/2 + c.cabinH/2, 0);
+  box(g, c.cabinLen-0.2, 0.08, c.wid-0.1, M(c.color), c.cabinX, by + c.bodyH/2 + c.cabinH + 0.02, 0);
+  [-1,1].forEach(function(z){ box(g,0.12,0.2,0.4,MB(0xfff3b0), c.len/2, by+0.1, z*(c.wid/2-0.35)); box(g,0.12,0.2,0.4,MB(0xff2a2a), -c.len/2, by+0.1, z*(c.wid/2-0.35)); });
+  if(c.bed) box(g, c.len-c.cabinLen-0.6, 0.35, c.wid-0.1, M(0x2a2a34), -c.len/2+(c.len-c.cabinLen-0.6)/2+0.05, by+c.bodyH/2+0.15, 0);
+  if(c.spoiler){ box(g,0.5,0.08,c.wid-0.2,M(0x101014),-c.len/2+0.25,by+c.bodyH/2+0.55,0); [-1,1].forEach(function(z){ box(g,0.1,0.5,0.1,M(0x101014),-c.len/2+0.25,by+c.bodyH/2+0.25,z*(c.wid/2-0.4)); }); }
+  var xs = c.len > 6 ? [c.len/2-1.2, -c.len/2+1.2] : [c.len/2-0.95, -c.len/2+0.95];
+  xs.forEach(function(x){ [-1,1].forEach(function(z){ var wh = cyl(g, w, w, 0.38, 12, M(0x15151a), x, w, z*(c.wid/2)); wh.rotation.x = Math.PI/2; }); });
+  return g;
+}
+function motorsPanel(s){
+  var i = 0;
+  panel(s, function(b){
+    b.appendChild(h("h3","","BUZZ MOTORS")); var mv = miniView(s, b, 190);
+    var nm = h("h3"), tp = h("p"), pr = h("div","fwprice"), sp = h("p","fwstat"), hd = h("p","fwstat"); nm.style.marginTop = "12px"; [nm, tp, pr, sp, hd].forEach(function(e){ b.appendChild(e); });
+    function show(){ var c = CARS[i]; mv.set(carModel(c), Math.max(8, c.len*1.7), 3.2, 0.9); nm.textContent = c.name+"  ("+(i+1)+"/"+CARS.length+")"; tp.textContent = c.type; pr.textContent = money(c.price); sp.textContent = "Speed     "+stars(c.speed); hd.textContent = "Handling  "+stars(c.handling); }
+    var row = h("div","fwrow"); [["\u25C0 Previous",-1],["Next \u25B6",1]].forEach(function(o){ var bt = h("button","fwbtn",o[0]); bt.type = "button"; bt.addEventListener("click", function(){ i = (i+o[1]+CARS.length)%CARS.length; show(); }); row.appendChild(bt); }); b.appendChild(row);
+    b.appendChild(h("p","","You can look at every car for now. Buying and driving open in the next update, when your BUZZ CASH is connected to the shop.")); closeBtn(s, b); show();
+  });
+}
+
+/* ---- Buzz Fashion ---- */
+var SHOP = {
+  Tops: {key:"shirt", items:[["Buzz Red Tee",500,0xE01B32],["White Tee",400,0xf2f2f2],["Black Tee",400,0x1b1b22],["Champion Gold Tee",1200,0xEDBA3E],["Promoter Blue Polo",900,0x2f6fdb],["Mint Polo",900,0x27ae60]]},
+  Jackets: {key:"jacket", items:[["Black Leather",3500,0x15151a],["Red Satin",2800,0xb3122a],["Denim",2200,0x3b5f8f],["Gold Bomber",5000,0xc9962a]]},
+  Trousers: {key:"pants", items:[["Black Jeans",800,0x22232b],["Blue Jeans",800,0x2f4f86],["Grey Slacks",1200,0x6b6e78],["White Suit Trousers",1800,0xe8e8ee]]},
+  Shoes: {key:"shoes", items:[["White Trainers",900,0xf2f2f2],["Black Boots",1300,0x0e0e12],["Gold Sneakers",2500,0xEDBA3E],["Red High-tops",1500,0xE01B32]]},
+  Caps: {key:"cap", items:[["Buzz Red Cap",600,0xE01B32],["Black Cap",600,0x15151a],["Gold Cap",1000,0xEDBA3E]]}
+};
+function setLook(s, look){
+  var old = s.me, pos = old.position.clone(), rot = old.rotation.y; s.scene.remove(old); disposeObj(old);
+  var m = makeHuman(Object.assign({name:userName()}, look)); m.position.copy(pos); m.rotation.y = rot; s.scene.add(m);
+  if(s.renderer.shadowMap.enabled) m.traverse(function(o){ if(o.isMesh) o.castShadow = true; });
+  s.me = m; s.look = look;
+}
+function fashionPanel(s){
+  var pick = Object.assign({}, s.look || {}), tab = "Tops", sel = {};   /* sel: key -> {price} for what is being tried on */
+  panel(s, function(b){
+    b.appendChild(h("h3","","BUZZ FASHION")); var mv = miniView(s, b, 230), list = h("div"), total = h("div","fwprice"); total.style.margin = "10px 0 2px";
+    function preview(){ mv.set(makeHuman(Object.assign({name:userName()}, pick)), 6.4, 2.2, 1.45); var sum = 0; for(var k in sel) sum += sel[k]; total.textContent = "Outfit total: "+money(sum); }
+    var tabs = h("div","fwtabs"); b.appendChild(tabs);
+    function draw(){
+      tabs.innerHTML = ""; Object.keys(SHOP).forEach(function(t){ var bt = h("button","fwbtn"+(t===tab?" on":""),t); bt.type = "button"; bt.addEventListener("click", function(){ tab = t; draw(); }); tabs.appendChild(bt); });
+      list.innerHTML = ""; var cat = SHOP[tab], none = h("button","fwbtn"+(pick[cat.key]===undefined?" on":""),"Default"); none.type = "button"; none.addEventListener("click", function(){ delete pick[cat.key]; delete sel[cat.key]; draw(); preview(); }); list.appendChild(none);
+      cat.items.forEach(function(it){ var bt = h("button","fwbtn fwitem"+(pick[cat.key]===it[2]?" on":"")); bt.type = "button"; bt.appendChild(h("span","",it[0])); bt.appendChild(h("span","",money(it[1])));
+        bt.addEventListener("click", function(){ pick[cat.key] = it[2]; sel[cat.key] = it[1]; draw(); preview(); }); list.appendChild(bt); });
+    }
+    b.appendChild(list); b.appendChild(total); draw(); preview();
+    var wear = h("button","fwbtn red","Wear this in the city"); wear.type = "button"; wear.addEventListener("click", function(){ setLook(s, pick); closePanel(s); showWhere(s, "LOOKING GOOD"); }); b.appendChild(wear);
+    b.appendChild(h("p","","This is a free try-on. Buying and saving outfits to your account opens in the next update, so a new look lasts until you leave Free World.")); closeBtn(s, b, "Leave the shop");
+  });
+}
+
+/* ---- the other three places ---- */
+function hqPanel(s){
+  infoPanel(s, "MY HEADQUARTERS", ["Owner: "+userName(), "Your plot is still empty. Building your headquarters opens in the next update, once BUZZ CASH purchases are switched on.", "Planned upgrades:"],
+    [["Basic headquarters",""],["Upgraded headquarters",""],["Superstar locker room",""],["Training room",""],["Office",""],["Trophy room",""],["Arena expansion",""]]);
+}
+function arenaPanel(s){
+  infoPanel(s, "BUZZ ARENA", ["The home of live wrestling in Buzz City.", "Promoter: "+userName(), "The doors open for events in a later update. For now you can walk around the outside and see the building."]);
+}
+function trainingPanel(s){
+  infoPanel(s, "BUZZ TRAINING CENTRE", ["Where future superstars will be developed and where managers will take on challenges.", "Training sessions and manager challenges open in a later update."]);
+}
+
 function interact(s){
   var sp = C.nearestSpot(s.p.x, s.p.z); if(!sp || !sp.interact) return;
-  panel(s, function(b){ b.appendChild(h("h3","",sp.name)); b.appendChild(h("p","","You made it to the door. The inside of this building opens in the next update of Free World, so there is nothing to do in here yet."));
-    var ok = h("button","fwbtn red","OK"); ok.type = "button"; ok.addEventListener("click", function(){ closePanel(s); }); b.appendChild(ok); });
+  if(sp.id==="motors") return motorsPanel(s); if(sp.id==="fashion") return fashionPanel(s); if(sp.id==="hq") return hqPanel(s); if(sp.id==="arena") return arenaPanel(s); if(sp.id==="training") return trainingPanel(s);
 }
 function togglePause(s){ if(document.getElementById("fw-panel")){ closePanel(s); return; }
   panel(s, function(b){ b.appendChild(h("h3","","Paused"));
