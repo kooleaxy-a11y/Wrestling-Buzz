@@ -1,11 +1,16 @@
-/* WRESTLING BUZZ FREE WORLD, Phase 1: the 3D city, your manager, camera, controls and collisions.
+/* WRESTLING BUZZ FREE WORLD, Phase 2: multiplayer (other managers walk the city with you) on top of the Phase 1 city.
    Needs three.min.js (r128) and fw-core.js, both loaded on demand when a player enters Free World. */
 (function(){
 "use strict";
-var VERSION = "phase-1", GFX_KEY = "wb_fw_gfx", T = null, C = null, A = null;   /* T = THREE, C = FWCore, A = active session */
+var VERSION = "phase-2", GFX_KEY = "wb_fw_gfx", T = null, C = null, A = null;   /* T = THREE, C = FWCore, A = active session */
 function h(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text!==undefined) e.textContent = text; return e; }
 function isTouch(){ return window.matchMedia && matchMedia("(pointer:coarse)").matches; }
 function loadScript(src){ return new Promise(function(ok, no){ var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = function(){ no(new Error("load "+src)); }; document.head.appendChild(s); }); }
+
+/* Where the multiplayer server lives, for example "wss://wb-freeworld.onrender.com". Empty = single player.
+   For testing you can also run  localStorage.wb_fw_server = "ws://localhost:2567"  in the browser console. */
+var FW_SERVER = "";
+function serverUrl(){ var v = window.FW_SERVER || ""; try{ v = v || localStorage.getItem("wb_fw_server") || ""; }catch(e){} return String(v || FW_SERVER || "").trim(); }
 
 /* ---------- styles ---------- */
 var css = "body.fwlock{overflow:hidden}#fw-root{position:fixed;inset:0;height:100dvh;z-index:8500;background:#0b0b0d;color:#fff;font-family:inherit;touch-action:none;user-select:none;-webkit-user-select:none}#fw-root>canvas.fwgl{display:block;width:100%;height:100%}"+
@@ -17,7 +22,7 @@ var css = "body.fwlock{overflow:hidden}#fw-root{position:fixed;inset:0;height:10
 "#fw-prompt{position:absolute;left:50%;bottom:calc(215px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:none;white-space:nowrap;font-size:17px;padding:13px 22px;border-radius:14px;background:#E01B32;border:2px solid #fff}#fw-where{pointer-events:none;position:absolute;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:6px 14px;border-radius:99px;background:rgba(10,10,14,.7);font-weight:800;letter-spacing:.06em;font-size:13px;color:#EDBA3E;opacity:0;transition:opacity .4s}"+
 "#fw-load{position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,#4a0d17,#0b0b0d 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:5;text-align:center;padding:20px}#fw-load h2{margin:0;font-size:34px;letter-spacing:.06em;color:#EDBA3E}#fw-load h2 b{color:#fff}.fwbar{width:min(260px,70vw);height:8px;border-radius:5px;background:#26202b;overflow:hidden}.fwbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#E01B32,#EDBA3E);transition:width .25s}"+
 ".fwpanel{position:absolute;inset:0;background:rgba(0,0,0,.72);z-index:4;display:flex;align-items:center;justify-content:center;padding:14px}.fwbox{width:min(380px,100%);background:#101014;border:2px solid #E01B32;border-radius:16px;padding:16px;max-height:90dvh;overflow:auto}.fwbox h3{margin:0 0 10px;color:#EDBA3E}.fwbox p{color:#d8cfbd;font-size:14px;margin:8px 0}.fwbox .fwbtn{display:block;width:100%;margin:8px 0}.fwbox select{width:100%;padding:10px;border-radius:8px;background:#08080a;color:#fff;border:1px solid #4a4a55;font:inherit}"+
-"#fw-map{position:absolute;right:10px;top:calc(66px + env(safe-area-inset-top,0px));width:168px;height:168px;border-radius:12px;border:2px solid #E01B32;background:rgba(10,10,14,.82);display:none}.fwerr{color:#ff7a88;font-weight:700}";
+"#fw-map{position:absolute;right:10px;top:calc(66px + env(safe-area-inset-top,0px));width:168px;height:168px;border-radius:12px;border:2px solid #E01B32;background:rgba(10,10,14,.82);display:none}.fwerr{color:#ff7a88;font-weight:700}.fwcard small.fwnet{font-size:11px;color:#9a9aa8}.fwcard small.fwnet.on{color:#7be39b}.fwcard small.fwnet.wait{color:#EDBA3E}.fwcard small.fwnet.bad{color:#ff7a88}";
 var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
 
 /* ---------- 3D helpers (low-poly, shared materials to keep it light) ---------- */
@@ -148,7 +153,7 @@ function enter(){
 }
 function exit(){
   if(!A) return; var s = A; A = null; s.alive = false; cancelAnimationFrame(s.raf);
-  window.removeEventListener("resize", s.onResize); window.removeEventListener("keydown", s.onKD); window.removeEventListener("keyup", s.onKU);
+  netClose(s); window.removeEventListener("resize", s.onResize); window.removeEventListener("keydown", s.onKD); window.removeEventListener("keyup", s.onKU);
   try{ if(s.renderer){ s.renderer.dispose(); } }catch(e){} if(s.root.parentNode) s.root.parentNode.removeChild(s.root);
   if(window.__fw === s) window.__fw = null;
   document.body.classList.remove("fwlock"); if(location.hash === "#freeworld") location.hash = "#promoter";
@@ -172,11 +177,11 @@ function start(s, prog, fail){
   var me = makeHuman({name:userName()}); scene.add(me); if(q==="high") me.traverse(function(o){ if(o.isMesh) o.castShadow = true; });
   var P = s.p = C.createState(); me.position.set(P.x,0.15,P.z); me.rotation.y = P.rot;
   s.scene = scene; s.me = me; s.camPos = new T.Vector3(P.x, 6, P.z+10);
-  buildHud(s); prog(100);
+  buildHud(s); netStart(s); prog(100);
   var ld = document.getElementById("fw-load"); setTimeout(function(){ if(ld && ld.parentNode) ld.parentNode.removeChild(ld); showWhere(s, "WELCOME TO BUZZ CITY"); }, 250);
   s.onResize = function(){ renderer.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth/innerHeight; cam.updateProjectionMatrix(); }; window.addEventListener("resize", s.onResize);
   s.onKD = function(e){ var k = e.key.toLowerCase(); if(["arrowup","arrowdown","arrowleft","arrowright"," "].indexOf(k)>=0) e.preventDefault(); s.keys[k] = true; if(e.repeat) return;
-    if(k==="e") interact(s); else if(k==="f") me.userData.wave(); else if(k==="m") toggleMap(s); else if(k==="escape") togglePause(s); };
+    if(k==="e") interact(s); else if(k==="f") doWave(s); else if(k==="m") toggleMap(s); else if(k==="escape") togglePause(s); };
   s.onKU = function(e){ s.keys[e.key.toLowerCase()] = false; }; window.addEventListener("keydown", s.onKD); window.addEventListener("keyup", s.onKU);
   /* camera drag (finger on the right side or mouse) and wheel zoom */
   canvas.addEventListener("pointerdown", function(e){ if(s.drag) return; s.drag = {id:e.pointerId, x:e.clientX, y:e.clientY}; try{ canvas.setPointerCapture(e.pointerId); }catch(x){} });
@@ -193,6 +198,7 @@ function frame(s, now){
   var sn = Math.sin(s.yaw), cs = Math.cos(s.yaw), dx = f*(-sn) + r*cs, dz = f*(-cs) + r*(-sn), run = !!(k.shift || s.run);
   if(!s.paused) C.step(P, {dx:dx, dz:dz, run:run}, dt);
   s.me.position.set(P.x, 0.15, P.z); s.me.rotation.y = P.rot; s.me.userData.update(dt, s.paused?0:P.speed, P.running);
+  updateRemotes(s, dt); netSend(s, now);
   /* follow camera */
   var tx = P.x, ty = 2.1, tz = P.z, cp = Math.cos(s.pitch), want = new T.Vector3(tx + Math.sin(s.yaw)*cp*s.dist, ty + Math.sin(s.pitch)*s.dist, tz + Math.cos(s.yaw)*cp*s.dist);
   s.camPos.lerp(want, 1 - Math.exp(-dt*9)); s.cam.position.copy(s.camPos); s.cam.lookAt(tx, ty, tz);
@@ -200,6 +206,94 @@ function frame(s, now){
   /* places */
   var sp = C.nearestSpot(P.x, P.z); if((sp && sp.id) !== s.spotId){ s.spotId = sp && sp.id; if(sp) showWhere(s, sp.name); updatePrompt(s, sp); }
   if(s.mapOn && s.frames%3===0) drawMap(s);
+}
+
+/* ---------- multiplayer (Phase 2) ---------- */
+var COLYSEUS_SRCS = ["https://cdn.jsdelivr.net/npm/colyseus.js@0.15.28/dist/colyseus.js", "https://unpkg.com/colyseus.js@0.15.28/dist/colyseus.js"];
+var LOOK_SHIRTS = [0x2f6fdb,0x27ae60,0xEDBA3E,0x8e44ad,0xf2f2f2,0xff7a1a,0x16a5a5,0xd35fa0], LOOK_SKINS = [0xe0ac82,0xc68642,0x8d5524,0xf1c27d,0xffdbac], LOOK_HAIR = [0x1a1410,0x4a2c12,0x0e0e0e,0x8a6a2a];
+var SEND_MS = 66, HEARTBEAT_MS = 1000, SHOW_DIST2 = 75*75;
+function ensureColyseus(){
+  if(window.Colyseus && window.Colyseus.Client) return Promise.resolve();
+  var list = window.FW_COLYSEUS_SRC ? [window.FW_COLYSEUS_SRC] : COLYSEUS_SRCS, i = 0;
+  return new Promise(function(ok, no){ (function next(){ if(i >= list.length) return no(new Error("colyseus")); loadScript(list[i++]).then(function(){ if(window.Colyseus && window.Colyseus.Client) ok(); else next(); }).catch(next); })(); });
+}
+function netStatus(cls, text){ var e = document.getElementById("fw-net"); if(!e) return; e.className = "fwnet "+cls; e.textContent = text; }
+function remoteCount(s){ var c = 0; if(s.net) for(var k in s.net.remotes) c++; return c; }
+function refreshNet(s){ if(s.net && s.net.live) netStatus("on", "ONLINE: "+(remoteCount(s)+1)+" in city"); }
+function disposeObj(o){ o.traverse(function(c){ if(c.geometry) c.geometry.dispose(); if(c.material && c.material.map){ c.material.map.dispose(); c.material.dispose(); } }); }
+function addRemote(s, p){
+  var n = s.net, id = p[0], look = p[2]|0; if(!n || n.remotes[id]) return;
+  var mesh = makeHuman({name:p[1]+(p[6] ? " \u2713" : ""), shirt:LOOK_SHIRTS[look%LOOK_SHIRTS.length], skin:LOOK_SKINS[(look+id)%LOOK_SKINS.length], hair:LOOK_HAIR[(look*3+id)%LOOK_HAIR.length]});
+  mesh.position.set(p[3], 0.15, p[4]); mesh.rotation.y = p[5]; s.scene.add(mesh);
+  if(s.renderer.shadowMap.enabled) mesh.traverse(function(o){ if(o.isMesh) o.castShadow = true; });
+  n.remotes[id] = {id:id, name:p[1]+(p[6] ? " \u2713" : ""), mesh:mesh, x:p[3], z:p[4], rot:p[5], tx:p[3], tz:p[4], trot:p[5], run:false, sp:0};
+  refreshNet(s);
+}
+function removeRemote(s, id){ var n = s.net, r = n && n.remotes[id]; if(!r) return; s.scene.remove(r.mesh); disposeObj(r.mesh); delete n.remotes[id]; refreshNet(s); }
+function clearRemotes(s){ if(!s.net) return; Object.keys(s.net.remotes).forEach(function(id){ removeRemote(s, id); }); }
+function netStart(s){
+  var url = serverUrl(); if(!url){ netStatus("", "OFFLINE (single player)"); return; }
+  s.net = {room:null, remotes:{}, live:false, tries:0, sendT:0, lastSent:null, closed:false, idle:false, myId:0, timer:0};
+  netStatus("wait", "Connecting...");
+  ensureColyseus().then(function(){ if(s.alive && s.net && !s.net.closed) netJoin(s, url); }).catch(function(){ if(s.alive){ s.net.closed = true; netStatus("bad", "Online play unavailable"); } });
+}
+function netJoin(s, url){
+  var n = s.net; if(!n || n.closed || n.room) return;
+  netStatus("wait", n.tries ? "Reconnecting..." : "Connecting...");
+  var client; try{ client = new window.Colyseus.Client(url); }catch(e){ n.closed = true; return netStatus("bad", "Bad server address"); }
+  var tokenP = Promise.resolve(null); try{ if(typeof readSession === "function" && typeof getUserToken === "function" && readSession()) tokenP = getUserToken().catch(function(){ return null; }); }catch(e){}
+  tokenP.then(function(token){ return client.joinOrCreate("freeworld", {name:userName(), token:token || "", v:VERSION, x:Math.round(s.p.x*100)/100, z:Math.round(s.p.z*100)/100}); }).then(function(room){
+    if(!s.alive || n.closed){ try{ room.leave(); }catch(e){} return; }
+    n.room = room; n.live = true; n.tries = 0; n.lastSent = null; n.idle = false;
+    room.onMessage("welcome", function(m){ n.myId = m.id; clearRemotes(s); (m.players||[]).forEach(function(p){ if(p[0] === m.id){ n.me = {name:p[1], verified:!!p[6]}; } else addRemote(s, p); }); refreshNet(s); });
+    room.onMessage("join", function(p){ addRemote(s, p); });
+    room.onMessage("leave", function(id){ removeRemote(s, id); });
+    room.onMessage("snap", function(rows){ rows.forEach(function(r){ var o = n.remotes[r[0]]; if(o){ o.tx = r[1]; o.tz = r[2]; o.trot = r[3]; o.run = !!r[4]; } }); });
+    room.onMessage("wave", function(id){ var o = n.remotes[id]; if(o) o.mesh.userData.wave(); });
+    room.onMessage("fix", function(m){ s.p.x = m.x; s.p.z = m.z; s.p.vx = 0; s.p.vz = 0; n.lastSent = null; });
+    room.onError(function(){});
+    room.send("hello");
+    room.onLeave(function(code){ n.live = false; n.room = null; clearRemotes(s); if(!s.alive || n.closed) return;
+      if(code === 4001){ n.idle = true; netStatus("", "Disconnected (idle)"); } else if(code === 4003){ n.closed = true; netStatus("bad", "Signed in somewhere else"); } else if(code === 4002){ n.closed = true; netStatus("bad", "Disconnected by server"); } else netRetry(s); });
+  }).catch(function(){ if(s.alive && !n.closed) netRetry(s); });
+}
+function netRetry(s){
+  var n = s.net; if(!n || n.closed) return; n.tries++;
+  if(n.tries > 6){ netStatus("bad", "OFFLINE (can't reach server)"); return; }
+  netStatus("wait", "Reconnecting..."); clearTimeout(n.timer); n.timer = setTimeout(function(){ if(s.alive && !n.closed) netJoin(s, serverUrl()); }, Math.min(8000, 700*n.tries*n.tries));
+}
+function netRetryNow(s){ var n = s.net; if(!n){ netStart(s); return; } if(n.live || n.room) return; n.closed = false; n.tries = 0; clearTimeout(n.timer); if(window.Colyseus && window.Colyseus.Client) netJoin(s, serverUrl()); else netStart(s); }
+function netClose(s){ var n = s.net; if(!n) return; n.closed = true; clearTimeout(n.timer); try{ if(n.room) n.room.leave(); }catch(e){} n.room = null; n.live = false; clearRemotes(s); }
+function netSend(s, now){
+  var n = s.net; if(!n) return;
+  if(n.idle && !n.room && !n.closed){ n.idle = false; n.tries = 0; netJoin(s, serverUrl()); return; }   /* the frame loop only runs while the tab is visible, so this rejoins on return */
+  if(!n.live || !n.room) return;
+  var P = s.p, l = n.lastSent, moved = !l || Math.abs(P.x-l.x) > 0.02 || Math.abs(P.z-l.z) > 0.02 || Math.abs(C.angDiff(l.rot, P.rot)) > 0.05 || l.run !== P.running;
+  if(now - n.sendT < SEND_MS || (!moved && now - n.sendT < HEARTBEAT_MS)) return;
+  n.sendT = now; n.lastSent = {x:P.x, z:P.z, rot:P.rot, run:P.running};
+  try{ n.room.send("move", {x:Math.round(P.x*100)/100, z:Math.round(P.z*100)/100, rot:Math.round(P.rot*100)/100, run:P.running ? 1 : 0}); }catch(e){}
+}
+function updateRemotes(s, dt){
+  var n = s.net; if(!n) return; var k = 1 - Math.exp(-dt*11), P = s.p;
+  for(var id in n.remotes){
+    var r = n.remotes[id], ox = r.x, oz = r.z, dx = r.tx-r.x, dz = r.tz-r.z;
+    if(dx*dx+dz*dz > 36){ r.x = r.tx; r.z = r.tz; } else { r.x += dx*k; r.z += dz*k; }
+    r.rot += C.angDiff(r.rot, r.trot)*k;
+    var sp = dt > 0 ? Math.sqrt((r.x-ox)*(r.x-ox)+(r.z-oz)*(r.z-oz))/dt : 0; r.sp = r.sp*0.7 + sp*0.3;
+    var m = r.mesh, ex = r.x-P.x, ez = r.z-P.z; m.position.set(r.x, 0.15, r.z); m.rotation.y = r.rot; m.visible = ex*ex+ez*ez < SHOW_DIST2;
+    m.userData.update(dt, r.sp, r.run);
+  }
+}
+function doWave(s){ s.me.userData.wave(); var n = s.net; if(n && n.live && n.room){ try{ n.room.send("wave"); }catch(e){} } }
+function n0(s){ return s.net && s.net.me; }
+function playersPanel(s){
+  panel(s, function(b){
+    var n = s.net, names = [((n0(s) && n0(s).name) || userName())+(n0(s) && n0(s).verified ? " \u2713" : "")+" (you)"]; if(n) for(var id in n.remotes) names.push(n.remotes[id].name);
+    b.appendChild(h("h3","","Players in Buzz City ("+names.length+")")); names.forEach(function(t, i){ b.appendChild(h("p","",(i+1)+". "+t)); });
+    if(!serverUrl()) b.appendChild(h("p","","Multiplayer is switched off because no server address is set yet."));
+    else if(!n || !n.live){ b.appendChild(h("p","","Not connected to the multiplayer server right now.")); var rt = h("button","fwbtn","Try again"); rt.type = "button"; rt.addEventListener("click", function(){ closePanel(s); netRetryNow(s); }); b.appendChild(rt); }
+    var ok = h("button","fwbtn red","Close"); ok.type = "button"; ok.addEventListener("click", function(){ closePanel(s); }); b.appendChild(ok);
+  });
 }
 
 /* ---------- HUD ---------- */
@@ -228,15 +322,16 @@ function drawMap(s){
   x.fillStyle = "#cfc8b8"; x.beginPath(); x.arc(ox,oy,16*S,0,7); x.fill();
   W.boxes.forEach(function(b){ if(b.id==="bench"||b.id==="car") return; x.fillStyle = "#E01B32"; x.fillRect(ox+b.x0*S, oy+b.z0*S, b.w*S, b.d*S); });
   x.fillStyle = "#EDBA3E"; W.spots.forEach(function(sp){ if(sp.interact){ x.beginPath(); x.arc(ox+sp.x*S, oy+sp.z*S, 2.2, 0, 7); x.fill(); } });
+  if(s.net){ x.fillStyle = "#7bc4ff"; for(var rid in s.net.remotes){ var rm = s.net.remotes[rid]; x.beginPath(); x.arc(ox+rm.x*S, oy+rm.z*S, 3, 0, 7); x.fill(); } }
   x.save(); x.translate(ox+s.p.x*S, oy+s.p.z*S); x.rotate(Math.PI - s.p.rot); x.fillStyle = "#fff"; x.strokeStyle = "#000"; x.beginPath(); x.moveTo(0,-5); x.lineTo(4,4); x.lineTo(-4,4); x.closePath(); x.fill(); x.stroke(); x.restore();
 }
 function buildHud(s){
   var root = s.root, nm = userName();
-  var card = h("div","fwcard"); var av = h("div","fwav",nm.charAt(0).toUpperCase()); card.appendChild(av); var tx = h("div"); tx.appendChild(h("b","",nm)); var bal = h("small","","BUZZ CASH: ..."); tx.appendChild(bal); card.appendChild(tx); root.appendChild(card);
+  var card = h("div","fwcard"); var av = h("div","fwav",nm.charAt(0).toUpperCase()); card.appendChild(av); var tx = h("div"); tx.appendChild(h("b","",nm)); var bal = h("small","","BUZZ CASH: ..."); tx.appendChild(bal); var nt = h("small","fwnet","OFFLINE (single player)"); nt.id = "fw-net"; tx.appendChild(nt); card.appendChild(tx); root.appendChild(card);
   (function(){ try{ if(!readSession()){ bal.textContent = "BUZZ CASH: log in"; return; } getUserToken().then(function(t){ return fetch(SUPABASE_URL+"/rest/v1/rpc/legends_me",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+t,"Content-Type":"application/json"},body:"{}"}); }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ bal.textContent = (j && j.cash_balance!=null) ? "BUZZ CASH: B "+Number(j.cash_balance).toLocaleString() : "BUZZ CASH: -"; }).catch(function(){ bal.textContent = "BUZZ CASH: -"; }); }catch(e){ bal.textContent = "BUZZ CASH: -"; } })();
   var tr = h("div","fwtr"); function tb(t, f){ var b = h("button","fwbtn",t); b.type = "button"; b.addEventListener("click", f); tr.appendChild(b); return b; }
   tb("\uD83D\uDDFA", function(){ toggleMap(s); }).setAttribute("aria-label","Map");
-  tb("\uD83D\uDC65", function(){ panel(s, function(b){ b.appendChild(h("h3","","Players nearby")); b.appendChild(h("p","","1. "+nm+" (you)")); b.appendChild(h("p","","Other managers will show up here when multiplayer opens in the next phase.")); var ok = h("button","fwbtn red","Close"); ok.type = "button"; ok.addEventListener("click", function(){ closePanel(s); }); b.appendChild(ok); }); }).setAttribute("aria-label","Players");
+  tb("\uD83D\uDC65", function(){ playersPanel(s); }).setAttribute("aria-label","Players");
   tb("\u2630", function(){ togglePause(s); }).setAttribute("aria-label","Menu"); root.appendChild(tr);
   var map = h("canvas"); map.id = "fw-map"; map.width = 336; map.height = 336; root.appendChild(map);
   var wh = h("div"); wh.id = "fw-where"; root.appendChild(wh);
@@ -248,7 +343,7 @@ function buildHud(s){
   joy.addEventListener("pointermove", function(e){ if(s.joy.id===e.pointerId) jmove(e); });
   var jend = function(e){ if(s.joy.id===e.pointerId){ s.joy.id = null; s.joy.x = 0; s.joy.y = 0; knob.style.transform = ""; } }; joy.addEventListener("pointerup", jend); joy.addEventListener("pointercancel", jend);
   /* right-hand buttons */
-  var br = h("div","fwbr"); var wv = h("button","fwbtn","Wave"); wv.type = "button"; wv.addEventListener("click", function(){ s.me.userData.wave(); }); br.appendChild(wv);
+  var br = h("div","fwbr"); var wv = h("button","fwbtn","Wave"); wv.type = "button"; wv.addEventListener("click", function(){ doWave(s); }); br.appendChild(wv);
   var rn = h("button","fwbtn","Run"); rn.type = "button"; rn.setAttribute("aria-pressed","false"); rn.addEventListener("click", function(){ s.run = !s.run; rn.classList.toggle("on", s.run); rn.setAttribute("aria-pressed", s.run?"true":"false"); }); br.appendChild(rn);
   root.appendChild(br);
 }
