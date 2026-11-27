@@ -5545,7 +5545,7 @@ var musTracks = [], musIdx = 0;
 function musSwitch(mode){
   var wasOn = mOn;
   if(wasOn) musOff();
-  musAudio = null; musMode = mode;
+  musReset(); musAudio = null; musMode = mode;
   if(wasOn) musOn();
 }
 function setNowPlaying(t){
@@ -5553,19 +5553,60 @@ function setNowPlaying(t){
   if(!np){ np = document.createElement("div"); np.id = "np"; np.className = "np"; var f = document.querySelector("footer .wrap"); if(f) f.appendChild(np); }
   np.textContent = "Music: "+t.title+(t.credit ? " | "+t.credit : "");
   var b = document.getElementById("mus"); if(b) b.title = "Now playing: "+t.title;
+  if("mediaSession" in navigator && window.MediaMetadata){ try{ navigator.mediaSession.metadata = new MediaMetadata({title:t.title, artist:t.credit || "Wrestling Buzz"}); }catch(e){} }
 }
 function musLoadTrack(){ var t = musTracks[musIdx]; musAudio.src = trackUrl(t.path); setNowPlaying(t); }
+/* ---- playlist with crossfade: the next song is preloaded, then fades in while the current one fades out ---- */
+var MUS_FADE = 4, MUS_PVOL = 0.35, musOld = null, musPre = null, musFading = false, musFadeIv = 0, musTickId = 0;
+function musReset(){ [musOld, musPre && musPre.el, musAudio].forEach(function(a){ if(a){ try{ a.pause(); }catch(e){} } }); clearInterval(musFadeIv); clearInterval(musTickId); musOld = null; musPre = null; musFading = false; }
+function musMake(idx){
+  var a = new Audio(); a.preload = "auto"; a.volume = 0; a.setAttribute("playsinline","");
+  a.src = trackUrl(musTracks[idx].path);
+  a.addEventListener("playing", function(){ if(a === musAudio) window.musBad = 0; });
+  a.addEventListener("ended", function(){ if(a === musAudio && !musFading) musCross(0.3); });   /* safety net if the timer was paused by the phone */
+  a.addEventListener("error", function(){
+    if(a !== musAudio){ if(musPre && musPre.el === a) musPre = null; return; }
+    window.musBad = (window.musBad||0)+1;
+    if(window.musBad <= musTracks.length && musTracks.length > 1) musCross(0.3);
+    else { musMode = "synth"; musReset(); musAudio = null; if(mOn){ mOn = false; musOn(); } }
+  });
+  return a;
+}
+function musFinishFade(){ clearInterval(musFadeIv); if(musOld){ try{ musOld.pause(); }catch(e){} musOld = null; } if(musAudio) musAudio.volume = MUS_PVOL; musFading = false; }
+function musCross(secs){
+  if(!musTracks.length) return;
+  if(musFading) musFinishFade();
+  var old = musAudio, idx = (musIdx+1)%musTracks.length, nw;
+  musIdx = idx;
+  if(musPre && musPre.idx === idx) nw = musPre.el; else { nw = musMake(idx); if(musPre){ try{ musPre.el.pause(); }catch(e){} } }
+  musPre = null; nw.volume = 0; musAudio = nw; setNowPlaying(musTracks[idx]);
+  var pr = nw.play(); if(pr && pr.catch) pr.catch(function(){});
+  if(!old || old.ended || old.paused){ nw.volume = MUS_PVOL; if(old){ try{ old.pause(); }catch(e){} } return; }
+  musOld = old; musFading = true; var t0 = Date.now(), ms = Math.max(200, secs*1000);
+  musFadeIv = setInterval(function(){ var k = Math.min(1, (Date.now()-t0)/ms); nw.volume = MUS_PVOL*k; old.volume = MUS_PVOL*(1-k); if(k >= 1) musFinishFade(); }, 50);
+}
+function musTick(){
+  if(musMode !== "playlist" || !mOn || !musAudio || musFading || musTracks.length < 2) return;
+  var d = musAudio.duration; if(!isFinite(d) || d <= 0) return;
+  var left = d - musAudio.currentTime;
+  if(left <= 25 && !musPre){ var ni = (musIdx+1)%musTracks.length; musPre = {idx:ni, el:musMake(ni)}; try{ musPre.el.load(); }catch(e){} }   /* get the next song ready early */
+  var f = Math.min(MUS_FADE, d/3); if(left <= f) musCross(f);
+}
+function musMedia(){
+  if(!("mediaSession" in navigator)) return;
+  try{
+    navigator.mediaSession.setActionHandler("play", function(){ if(!mOn) musOn(); });
+    navigator.mediaSession.setActionHandler("pause", function(){ if(mOn) musOff(); });
+    navigator.mediaSession.setActionHandler("nexttrack", function(){ if(musMode === "playlist" && musTracks.length > 1) musCross(1.5); });
+  }catch(e){}
+}
 function musAudioStart(){
   if(!musAudio){
-    musAudio = new Audio(); musAudio.volume = 0.35;
     if(musMode==="playlist"){
-      musAudio.addEventListener("ended", function(){ musIdx = (musIdx+1)%musTracks.length; musLoadTrack(); var q = musAudio.play(); if(q && q.catch) q.catch(function(){}); });
-      musAudio.addEventListener("playing", function(){ window.musBad = 0; });
-      musAudio.addEventListener("error", function(){ window.musBad = (window.musBad||0)+1;
-        if(window.musBad <= musTracks.length && musTracks.length > 1){ musIdx = (musIdx+1)%musTracks.length; musLoadTrack(); var q = musAudio.play(); if(q && q.catch) q.catch(function(){}); }
-        else { musMode = "synth"; musAudio = null; if(mOn){ mOn = false; musOn(); } } });
-      musLoadTrack();
-    } else { musAudio.loop = true; musAudio.src = MUSIC_FILE; }
+      musAudio = musMake(musIdx); musAudio.volume = MUS_PVOL; setNowPlaying(musTracks[musIdx]);
+      if(musTracks.length === 1) musAudio.loop = true;
+      clearInterval(musTickId); musTickId = setInterval(musTick, 300); musMedia();
+    } else { musAudio = new Audio(); musAudio.volume = 0.35; musAudio.loop = true; musAudio.src = MUSIC_FILE; }
   }
   var pr = musAudio.play(); if(pr && pr.catch) pr.catch(function(){});
 }
@@ -5655,7 +5696,7 @@ function musOn(){
 }
 function musOff(){
   mOn = false; musSetUI(false);
-  if(musMode!=="synth"){ if(musAudio) musAudio.pause(); return; }
+  if(musMode!=="synth"){ if(musAudio) musAudio.pause(); if(musOld) musOld.pause(); return; }
   if(!mAc) return;
   mMaster.gain.cancelScheduledValues(mAc.currentTime);
   mMaster.gain.setValueAtTime(Math.max(mMaster.gain.value,0.0001), mAc.currentTime);
