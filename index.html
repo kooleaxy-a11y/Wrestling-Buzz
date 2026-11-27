@@ -1195,10 +1195,34 @@ select:focus{border-color:var(--gold);outline:none}
     </div>
 
     <div class="panel apanel" id="pmadm-panel" hidden>
-      <h3 style="margin-top:0">Promoter Mode: superstar artwork</h3>
+      <h3 style="margin-top:0">Promoter Mode: superstars</h3>
       <p class="hint" style="margin:-4px 0 10px">Add a picture to any superstar, or switch one off. Only use photos you own or are licensed to use. The five Wrestling Buzz Originals already have artwork. Real WWE superstars show a placeholder until you add a licensed picture. Sign in under Live site stats first.</p>
       <div id="pmadm-gate" hidden><p class="hint">Sign in under <b>Live site stats</b> first, then come back here.</p></div>
-      <div id="pmadm-body" hidden><div id="pmadm-list"></div><p class="msg" id="pmadm-msg" role="status"></p></div>
+      <div id="pmadm-body" hidden>
+        <form id="sa-form" novalidate class="agrid" style="margin-bottom:14px">
+          <h4 style="margin:0">Add a new superstar</h4>
+          <div><label class="f" for="sa-name">Name</label><input id="sa-name" type="text" maxlength="40" placeholder="Superstar name" autocomplete="off"></div>
+          <div><label class="f" for="sa-tag">Tagline (optional)</label><input id="sa-tag" type="text" maxlength="80" placeholder="One short line under the name"></div>
+          <div><label class="f" for="sa-bio">Bio (optional)</label><textarea id="sa-bio" maxlength="400" rows="3" placeholder="A few sentences about this superstar"></textarea></div>
+          <div class="agrid" style="grid-template-columns:1fr 1fr;gap:10px">
+            <div><label class="f" for="sa-pop">Popularity (1-100)</label><input id="sa-pop" type="number" inputmode="numeric" min="1" max="100" placeholder="70"></div>
+            <div><label class="f" for="sa-abi">Wrestling ability (1-100)</label><input id="sa-abi" type="number" inputmode="numeric" min="1" max="100" placeholder="70"></div>
+            <div><label class="f" for="sa-mic">Mic skills (1-100)</label><input id="sa-mic" type="number" inputmode="numeric" min="1" max="100" placeholder="70"></div>
+            <div><label class="f" for="sa-sta">Stamina (1-100)</label><input id="sa-sta" type="number" inputmode="numeric" min="1" max="100" placeholder="70"></div>
+          </div>
+          <div><label class="f" for="sa-ovr">Overall rating (1-100)</label><input id="sa-ovr" type="number" inputmode="numeric" min="1" max="100" placeholder="Fills in from the four ratings"><p class="hint">It fills in as the average of the four ratings above. You can change it.</p></div>
+          <div class="agrid" style="grid-template-columns:1fr 1fr;gap:10px">
+            <div><label class="f" for="sa-price">Signing price (BUZZ CASH)</label><input id="sa-price" type="number" inputmode="numeric" min="0" placeholder="25000"></div>
+            <div><label class="f" for="sa-sal">Weekly salary (BUZZ CASH)</label><input id="sa-sal" type="number" inputmode="numeric" min="0" placeholder="1500"></div>
+          </div>
+          <div><label class="f" for="sa-wk">Contract length (weeks)</label><input id="sa-wk" type="number" inputmode="numeric" min="1" max="104" placeholder="12"></div>
+          <div><label class="f" for="sa-img">Picture (optional)</label><input id="sa-img" type="file" accept="image/*"><div class="prev" id="sa-prev" hidden><img id="sa-prev-img" alt="Picture preview"></div><p class="hint">Without a picture the superstar shows initials until you add one.</p></div>
+          <label class="chk"><input type="checkbox" id="sa-rights"> I own this picture, or I have a license to use it on this website.</label>
+          <div class="row" style="margin-top:0"><button class="btn" id="sa-go" type="submit">Add superstar</button></div>
+          <p class="msg" id="sa-msg" role="status"></p>
+        </form>
+        <h4 style="margin:6px 0 0">All superstars</h4>
+        <div id="pmadm-list"></div><p class="msg" id="pmadm-msg" role="status"></p></div>
     </div>
 
     <div class="panel apanel" id="vid-panel">
@@ -4695,6 +4719,10 @@ function pmFetchStars(){
   return fetch(SUPABASE_URL+"/rest/v1/superstars?select=*&category=eq.original&available=eq.true&order=sort_order", {headers:{"apikey":SUPABASE_KEY}})
     .then(function(r){ if(!r.ok) throw new Error("stars"); return r.json(); });
 }
+function pmFetchStarsAdmin(){
+  return fetch(SUPABASE_URL+"/rest/v1/superstars?select=*&category=eq.original&order=sort_order", {headers:sbHead()})
+    .then(function(r){ if(!r.ok) throw new Error("stars"); return r.json(); });
+}
 function starImage(s){ if(s.image_url && /^\/superstars\//.test(s.image_url) && ORIGINAL_ART[s.id]) return ORIGINAL_ART[s.id]; return (s.image_url && /^(https:\/\/|data:image\/|\/superstars\/)/.test(s.image_url)) ? s.image_url : (ORIGINAL_ART[s.id] || ""); }
 function initials(name){ return String(name||"").split(/\s+/).map(function(w){ return w[0]||""; }).join("").slice(0,2).toUpperCase(); }
 function portrait(s, cls){
@@ -4771,7 +4799,7 @@ function pmSoon(root){
   root.appendChild(w); pmTick(box);
   pmFetchStars().then(function(list){
     var strip = el("div","pmstrip"); list.forEach(function(s){ var c = el("div",""); c.appendChild(portrait(s,"")); c.appendChild(el("span","",s.name)); strip.appendChild(c); });
-    if(list.length && w.isConnected){ w.appendChild(el("h3","","The 20 launch superstars")); w.appendChild(strip); }
+    if(list.length && w.isConnected){ w.appendChild(el("h3","","The "+list.length+" superstars")); w.appendChild(strip); }
   }).catch(function(){});
 }
 function pmCelebrateOnce(){
@@ -5488,7 +5516,7 @@ function renderPmAdmin(){
   var signed = !!modToken();
   $("pmadm-gate").hidden = signed; $("pmadm-body").hidden = !signed;
   if(!signed) return;
-  pmFetchStars().then(function(rows){
+  pmFetchStarsAdmin().then(function(rows){
     var box = $("pmadm-list"); box.innerHTML = "";
     rows.forEach(function(s){
       var row = el("div","arow vrow");
@@ -5514,6 +5542,57 @@ function renderPmAdmin(){
     });
   }).catch(function(){ var m = $("pmadm-msg"); m.className = "msg err"; m.textContent = "Couldn't load the superstars. Run supabase-promoter.sql in Supabase first."; });
 }
+
+/* ---- admin: add a new superstar (name, picture, ratings, price) ---- */
+function saInt(id, lo, hi){ var raw = String($(id).value).trim(); if(!/^\d+$/.test(raw)) return null; var v = parseInt(raw, 10); return (v >= lo && v <= hi) ? v : null; }
+function saOverall(){
+  var r = ["sa-pop","sa-abi","sa-mic","sa-sta"].map(function(i){ return saInt(i, 1, 100); });
+  if(r.indexOf(null) < 0 && !$("sa-ovr").dataset.touched) $("sa-ovr").value = Math.round(r.reduce(function(a,b){ return a+b; }, 0)/4);
+}
+["sa-pop","sa-abi","sa-mic","sa-sta"].forEach(function(i){ $(i).addEventListener("input", saOverall); });
+$("sa-ovr").addEventListener("input", function(){ $("sa-ovr").dataset.touched = "1"; });
+$("sa-img").addEventListener("change", function(){
+  var f = $("sa-img").files && $("sa-img").files[0], pv = $("sa-prev");
+  if(!f){ pv.hidden = true; return; }
+  try{ $("sa-prev-img").src = URL.createObjectURL(f); pv.hidden = false; }catch(e){ pv.hidden = true; }
+});
+$("sa-form").addEventListener("submit", function(e){
+  e.preventDefault();
+  var m = $("sa-msg"), go = $("sa-go");
+  function bad(t){ m.className = "msg err"; m.textContent = t; return false; }
+  var name = $("sa-name").value.replace(/\s+/g," ").trim();
+  if(name.length < 2) return bad("Add the superstar's name.");
+  var pop = saInt("sa-pop",1,100), abi = saInt("sa-abi",1,100), mic = saInt("sa-mic",1,100), sta = saInt("sa-sta",1,100);
+  if([pop,abi,mic,sta].indexOf(null) >= 0) return bad("Each rating must be a whole number from 1 to 100.");
+  var ovr = saInt("sa-ovr",1,100); if(ovr === null) return bad("Overall rating must be a whole number from 1 to 100.");
+  var price = saInt("sa-price",0,1000000000); if(price === null) return bad("Add a signing price in BUZZ CASH (whole number, 0 or more).");
+  var sal = saInt("sa-sal",0,1000000000); if(sal === null) return bad("Add a weekly salary in BUZZ CASH (whole number, 0 or more).");
+  var wk = saInt("sa-wk",1,104); if(wk === null) return bad("Contract length must be 1 to 104 weeks.");
+  var file = $("sa-img").files && $("sa-img").files[0];
+  if(file && !$("sa-rights").checked) return bad("Please confirm you own the picture or have a license to use it on this website.");
+  var slug = name.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,28) || "star";
+  var id = slug+"_"+Math.random().toString(36).slice(2,6);
+  go.disabled = true; m.className = "msg"; m.textContent = file ? "Preparing picture..." : "Saving...";
+  (file ? shrinkImage(file, 700, 0.78).then(maybeUploadImage).then(function(url){ if(!/^https:\/\//.test(url)) throw new Error("noupload"); return url; }) : Promise.resolve(null))
+    .then(function(url){
+      m.textContent = "Saving...";
+      return rpc("admin_add_superstar", {p_id:id, p_name:name, p_tagline:$("sa-tag").value.trim().slice(0,80), p_bio:$("sa-bio").value.trim().slice(0,400),
+        p_popularity:pop, p_ability:abi, p_mic:mic, p_stamina:sta, p_overall:ovr, p_price:price, p_weekly_salary:sal, p_contract_weeks:wk, p_image_url:url}, true);
+    })
+    .then(function(r){ if(r.ok) return; return r.json().catch(function(){ return {}; }).then(function(j){ var e = new Error("rpc"); e.code = j && (j.code || j.message) || r.status; throw e; }); })
+    .then(function(){
+      m.className = "msg ok"; m.textContent = name+" was added. They now appear in the Promoter Mode marketplace.";
+      $("sa-form").reset(); $("sa-prev").hidden = true; delete $("sa-ovr").dataset.touched; PM.stars = null; renderPmAdmin();
+    })
+    .catch(function(err){
+      var c = String(err && err.code || "");
+      if(err && err.message === "noupload") bad("The picture couldn't be uploaded. Check you're signed in under Live site stats, or add the superstar without a picture and add it later.");
+      else if(/PGRST202|404|does not exist/i.test(c)) bad("The database doesn't have the add-superstar function yet. Run add-superstars.sql in Supabase first.");
+      else if(/not_admin|401|403|42501/i.test(c)) bad("You need to be signed in as an admin under Live site stats first.");
+      else bad("Couldn't add the superstar. Check you're signed in under Live site stats.");
+    })
+    .then(function(){ go.disabled = false; });
+});
 
 /* the Chat tab stays hidden until the chat is set up (SUPABASE_URL and SUPABASE_KEY above) */
 if(!chatConfigured()){ var chatTab = document.querySelector('[data-nav="chat"]'); if(chatTab) chatTab.hidden = true; }
