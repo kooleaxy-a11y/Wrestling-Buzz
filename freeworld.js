@@ -635,8 +635,56 @@ function hqPanel(s){
     closeBtn(s, b); draw();
   });
 }
+/* ---------- Buzz Arena: your Promoter Mode shows, champions and the PPV ---------- */
+function arenaErr(e){
+  var m = String(e && e.message || e);
+  if(/promoter_locked/.test(m)) return "The Arena opens with Promoter Mode on December 21, 2026.";
+  if(/no_promotion/.test(m)) return "Create your promotion in Promoter Mode to start putting on shows.";
+  if(/not_signed_in|JWT/.test(m)) return "Log in to see your shows.";
+  return "Couldn't load your shows. Try again in a moment.";
+}
+function arenaRow(left, right){ var d = h("div","fwitem fwbtn"); d.style.cursor = "default"; d.appendChild(h("span","",left)); d.appendChild(h("span","",right)); return d; }
+function arenaHead(text){ var p = h("p","",text); p.style.cssText = "color:#EDBA3E;font-weight:800;margin:14px 0 4px"; return p; }
+function arenaDay(v){ try{ var d = new Date(v); if(isNaN(d)) return String(v); return d.toLocaleDateString(undefined, {month:"short", day:"numeric"}); }catch(e){ return String(v); } }
 function arenaPanel(s){
-  infoPanel(s, "BUZZ ARENA", ["The home of live wrestling in Buzz City.", "Promoter: "+userName(), "The doors open for events in a later update. For now you can walk around the outside and see the building."]);
+  panel(s, function(b){
+    b.appendChild(h("h3","","BUZZ ARENA"));
+    b.appendChild(h("p","","The home of live wrestling in Buzz City. The shows you book in Promoter Mode are fought here."));
+    var box = h("div"); b.appendChild(box);
+    var msg = h("p","", signedIn() ? "Loading your shows..." : "Log in to see your shows."); box.appendChild(msg);
+    var acts = h("div"); b.appendChild(acts);
+    function bookBtn(){
+      var bk = h("button","fwbtn red","Book a show"); bk.type = "button";
+      bk.addEventListener("click", function(){ exit(); location.hash = "#promoter/book"; });
+      acts.appendChild(bk);
+    }
+    closeBtn(s, acts);
+    if(!signedIn()) return;
+    Promise.all([dbRpc("promoter_booking"), dbRpc("promoter_ppv_info").catch(function(){ return null; })]).then(function(r){
+      if(!s.alive || !b.isConnected) return;
+      var bk = r[0] || {}, ppv = r[1], hist = Array.isArray(bk.history) ? bk.history : [], titles = Array.isArray(bk.titles) ? bk.titles : [];
+      box.textContent = "";
+      if(ppv && ppv.name){
+        if(ppv.open && !ppv.done) box.appendChild(arenaRow("PPV LIVE: "+ppv.name, "Book it now"));
+        else if(ppv.done) box.appendChild(arenaRow("PPV: "+ppv.name, "Done this month"));
+        else if(ppv.opens_on) box.appendChild(arenaRow("Next PPV: "+ppv.name, "Opens "+arenaDay(ppv.opens_on)));
+      }
+      if(titles.length){ box.appendChild(arenaHead("CHAMPIONS")); titles.forEach(function(t){ box.appendChild(arenaRow(t.name, t.champion_name || "Vacant")); }); }
+      if(!hist.length){ box.appendChild(h("p","","No shows yet. Book your first show and the matches appear here.")); }
+      else {
+        var groups = [], seen = {};
+        hist.forEach(function(m){ var k = (m.show_name||"Show")+"|"+(m.week_key||""); if(!seen[k]){ seen[k] = {name:m.show_name||"Show", week:m.week_key||"", list:[]}; groups.push(seen[k]); } seen[k].list.push(m); });
+        groups.slice(0, 3).forEach(function(g){
+          box.appendChild(arenaHead((g.name+(g.week ? "  |  "+g.week : "")).toUpperCase()));
+          g.list.forEach(function(m){
+            box.appendChild(arenaRow(m.a_name+" vs "+m.b_name, m.winner_name+" won  |  "+m.rating+"/100"));
+            if(m.title_name){ var t = h("p","","Title: "+m.title_name); t.style.cssText = "margin:-2px 0 6px;font-size:12px;color:#EDBA3E"; box.appendChild(t); }
+          });
+        });
+      }
+      bookBtn(); acts.insertBefore(acts.lastChild, acts.firstChild);   /* put "Book a show" above "Close" */
+    }).catch(function(e){ if(b.isConnected) msg.textContent = arenaErr(e); });
+  });
 }
 function trainingPanel(s){
   infoPanel(s, "BUZZ TRAINING CENTRE", ["Where future superstars will be developed and where managers will take on challenges.", "Training sessions and manager challenges open in a later update."]);
