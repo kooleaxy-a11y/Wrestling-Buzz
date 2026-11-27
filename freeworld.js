@@ -168,10 +168,18 @@ function enter(){
   var fail = function(msg){ lm.className = "fwerr"; lm.textContent = msg; var b = h("button","fwbtn red","Back"); b.type = "button"; b.addEventListener("click", exit); load.appendChild(b); };
   prog(10);
   var needs = [];
-  if(!window.THREE) needs.push(loadScript("three.min.js")); if(!window.FWCore) needs.push(loadScript("fw-core.js"));
-  Promise.all(needs).then(function(){ T = window.THREE; C = window.FWCore; if(!s.alive) return; prog(45,"Building Buzz City..."); return new Promise(function(r){ setTimeout(r, 30); }); })
+  /* "?v=" makes the browser fetch the current files instead of an old cached copy (a stale fw-core.js was breaking Phase 5) */
+  var bust = "?v=" + VERSION, stage = "load";
+  if(!window.THREE) needs.push(loadScript("three.min.js" + bust)); if(!window.FWCore) needs.push(loadScript("fw-core.js" + bust));
+  Promise.all(needs).then(function(){ T = window.THREE; C = window.FWCore; if(!s.alive) return; stage = "start";
+    if(!T || !C) throw new Error("engine files loaded but did not initialise");
+    var W = C.WORLD, missing = []; if(!W || !W.parking) missing.push("WORLD.parking"); ["carSpec","createCar","stepCar","angDiff","nearestSpot","resolve","createState","step"].forEach(function(k){ if(typeof C[k] !== "function") missing.push(k); });
+    if(missing.length) throw new Error("fw-core.js is out of date (missing " + missing.join(", ") + "). Upload the Phase 5 fw-core.js and refresh.");
+    prog(45,"Building Buzz City..."); return new Promise(function(r){ setTimeout(r, 30); }); })
   .then(function(){ if(!s.alive) return; start(s, prog, fail); })
-  .catch(function(){ if(s.alive) fail("Could not load the 3D engine. Check your connection and try again."); });
+  .catch(function(e){ if(!s.alive) return; try{ console.error("[FreeWorld]", e); }catch(x){}
+    if(stage === "load") fail("Could not load the 3D engine. Check your connection and try again.");
+    else fail("Free World could not start: " + ((e && e.message) || e)); });
 }
 function exit(){
   if(!A) return; var s = A; A = null; s.alive = false; cancelAnimationFrame(s.raf);
