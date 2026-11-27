@@ -686,8 +686,61 @@ function arenaPanel(s){
     }).catch(function(e){ if(b.isConnected) msg.textContent = arenaErr(e); });
   });
 }
+/* ---------- Buzz Training Centre: check your roster's energy and heal injured superstars ---------- */
+var HEAL_FEE = 300;   /* shown to the player; the server decides the real charge */
+function trainErr(e){
+  var m = String(e && e.message || e);
+  if(/promoter_locked/.test(m)) return "The Training Centre opens with Promoter Mode on December 21, 2026.";
+  if(/no_promotion/.test(m)) return "Create your promotion in Promoter Mode first.";
+  if(/not_signed_in|JWT/.test(m)) return "Log in to use the Training Centre.";
+  if(/insufficient_funds|not_enough_cash/.test(m)) return "You don't have enough BUZZ CASH to heal them.";
+  if(/not_injured/.test(m)) return "That superstar isn't injured.";
+  return "Something went wrong. Try again in a moment.";
+}
+function moodText(r){ var t = {injured:"INJURED", exhausted:"EXHAUSTED", tired:"TIRED", fired_up:"FIRED UP", ready:"READY"}[r.mood] || "READY"; if(r.rating_mod) t += " "+(r.rating_mod>0?"+":"")+r.rating_mod; return t; }
 function trainingPanel(s){
-  infoPanel(s, "BUZZ TRAINING CENTRE", ["Where future superstars will be developed and where managers will take on challenges.", "Training sessions and manager challenges open in a later update."]);
+  panel(s, function(b){
+    b.appendChild(h("h3","","BUZZ TRAINING CENTRE"));
+    b.appendChild(h("p","","Where your superstars recover. Every match costs energy and they get back 4 a day. Tired stars lower your show rating, so check your roster here before you book a show."));
+    var status = h("p",""); status.style.cssText = "font-weight:700;min-height:1.2em"; b.appendChild(status);
+    var box = h("div"); b.appendChild(box);
+    var msg = h("p","", signedIn() ? "Loading your roster..." : "Log in to see your superstars."); box.appendChild(msg);
+    var acts = h("div"); b.appendChild(acts); closeBtn(s, acts);
+    if(!signedIn()) return;
+    function note(t, bad){ status.className = bad ? "fwerr" : ""; status.style.color = bad ? "" : "#7be39b"; status.textContent = t; }
+    function reload(){ return dbRpc("promoter_roster").then(function(l){ if(s.alive && b.isConnected) draw(Array.isArray(l) ? l : []); }); }
+    function draw(list){
+      box.textContent = "";
+      if(!list.length){ box.appendChild(h("p","","No superstars signed yet. Sign some in the Promoter Mode marketplace, then come back to look after them.")); return; }
+      var hurt = list.filter(function(r){ return r.injured; }).length, tired = list.filter(function(r){ return !r.injured && r.energy !== undefined && r.energy < 35; }).length;
+      box.appendChild(h("p","", list.length+" signed  |  "+hurt+" injured  |  "+tired+" worn out"));
+      list.slice().sort(function(x, y){ return (y.injured?1:0)-(x.injured?1:0) || (x.energy===undefined?100:x.energy)-(y.energy===undefined?100:y.energy); }).forEach(function(r){
+        var c = h("div","fwitem fwbtn"); c.style.cssText = "cursor:default;display:block;text-align:left";
+        var top = h("div"); top.style.cssText = "display:flex;justify-content:space-between;gap:8px;font-weight:800"; top.appendChild(h("span","",r.name)); top.appendChild(h("span","","OVR "+r.overall)); c.appendChild(top);
+        var low = r.injured ? "INJURED" : moodText(r);
+        var sub = h("div","", low+(r.energy !== undefined ? "  |  Energy "+r.energy+" / 100" : "")); sub.style.cssText = "font-size:13px;color:"+(r.injured?"#ff7a88":"#d8cfbd")+";margin-top:2px"; c.appendChild(sub);
+        if(r.energy !== undefined){
+          var tr = h("div"); tr.style.cssText = "height:6px;border-radius:4px;background:#26202b;margin-top:6px;overflow:hidden";
+          var fi = h("i"); fi.style.cssText = "display:block;height:100%;width:"+Math.max(0,Math.min(100,r.energy))+"%;background:"+(r.energy>=60?"#7be39b":(r.energy>=35?"#EDBA3E":"#E01B32")); tr.appendChild(fi); c.appendChild(tr);
+        }
+        if(r.injured){
+          if(r.injured_until){ var bk = h("div","","Back on "+arenaDay(r.injured_until)+" or heal now"); bk.style.cssText = "font-size:12px;margin-top:4px;color:#d8cfbd"; c.appendChild(bk); }
+          var hb = h("button","fwbtn red","Heal ("+money(HEAL_FEE)+")"); hb.type = "button"; hb.style.marginTop = "8px";
+          hb.addEventListener("click", function(){
+            if(!hb.dataset.sure){ hb.dataset.sure = "1"; hb.textContent = "Tap again to pay "+money(HEAL_FEE); setTimeout(function(){ if(hb.isConnected && hb.dataset.sure && !hb.disabled){ delete hb.dataset.sure; hb.textContent = "Heal ("+money(HEAL_FEE)+")"; } }, 4000); return; }
+            hb.disabled = true; hb.textContent = "Healing...";
+            dbRpc("promoter_heal", {p_superstar:r.superstar_id}).then(function(res){
+              var bal = res && res.wallet && res.wallet.balance; if(bal != null) setCash(s, bal);
+              return reload().then(function(){ if(b.isConnected) note(r.name+" is healed and ready to wrestle."); });
+            }).catch(function(e){ if(!b.isConnected) return; hb.disabled = false; delete hb.dataset.sure; hb.textContent = "Heal ("+money(HEAL_FEE)+")"; note(trainErr(e), true); });
+          });
+          c.appendChild(hb);
+        }
+        box.appendChild(c);
+      });
+    }
+    reload().catch(function(e){ if(b.isConnected) msg.textContent = trainErr(e); });
+  });
 }
 
 function interact(s){
