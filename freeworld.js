@@ -57,6 +57,60 @@ function carMesh(color){
   return g;
 }
 
+/* ---------- your headquarters: what you build shows on the plot ---------- */
+var hqRoot = null;
+function hqFill(own){
+  var g = hqRoot, basic = own("hq_basic"), up = own("hq_upgraded"), n = HQ_ITEMS.filter(function(it){ return own(it[0]); }).length, lvl = !basic ? 0 : (up ? 2 : 1);
+  box(g,25.6,0.12,17.6,M(0xb9b7ad),42,0.06,26);   /* paved plot */
+  var fm = M(0x8a8a95); [[42,17.2,26,0.4],[42,34.8,26,0.4]].forEach(function(p){ box(g,p[2],1.2,p[3],fm,p[0],0.7,p[1]); }); [[29.2,26,0.4,18],[54.8,26,0.4,18]].forEach(function(p){ box(g,p[2],1.2,p[3],fm,p[0],0.7,p[1]); });
+  if(!basic){   /* empty building site */
+    box(g,16,0.3,10,M(0x77777f),42,0.2,29); box(g,3,1.2,2,M(0x8a5a2b),36,0.75,31); box(g,3,0.9,2,M(0x8a5a2b),48,0.6,31);
+    [[32,19],[52,19],[32,33],[52,33],[38,23],[46,23]].forEach(function(p){ cyl(g,0.1,0.55,1.3,8,M(0xff7a1a),p[0],0.75,p[1]); });
+    sign(g,"MY HQ","READY TO BUILD",12,3,42,4.4,23.6,Math.PI,"#7a5a10");
+    return;
+  }
+  box(g,16,6,10,M(0xe0b43a),42,3,29); box(g,17,0.6,11,M(0x7a5a10),42,6.3,29); box(g,3.6,4.4,0.5,M(0x15151a),42,2.2,23.9);
+  [-1,1].forEach(function(sd){ box(g,4.5,2.6,0.3,MB(0x9fd8ff),42+sd*5.2,3.6,23.9); });
+  if(up){   /* second floor */
+    box(g,13.6,3.4,8.6,M(0xefc95a),42,8.3,29); box(g,15,0.5,10,M(0x7a5a10),42,10.25,29);
+    [-1,0,1].forEach(function(sd){ box(g,2.6,1.5,0.15,MB(0x9fd8ff),42+sd*4.2,8.5,24.65); });
+  }
+  sign(g,"MY HQ","LEVEL "+lvl+"  |  "+n+" OF "+HQ_ITEMS.length+" BUILT",12,3,42,up ? 12.4 : 8.6,23.6,Math.PI,"#7a5a10");
+  if(own("hq_locker")){   /* annex on the west side */
+    box(g,3.4,3.2,5,M(0x5a6a8a),31.9,1.6,29); box(g,3.9,0.3,5.5,M(0x2c3550),31.9,3.35,29); box(g,1.2,2.2,0.2,M(0x15151a),31.9,1.1,26.45);
+    var l1 = label("LOCKER ROOM", 4.2); l1.position.set(31.9,4.6,29); g.add(l1);
+  }
+  if(own("hq_office")){   /* annex on the east side */
+    box(g,3.4,3.2,5,M(0x6a5a3a),52.1,1.6,29); box(g,3.9,0.3,5.5,M(0x3a2f1a),52.1,3.35,29); box(g,1.2,2.2,0.2,M(0x15151a),52.1,1.1,26.45); box(g,2.4,0.9,0.15,MB(0x9fd8ff),52.1,2.4,26.4);
+    var l2 = label("OFFICE", 3.4); l2.position.set(52.1,4.6,29); g.add(l2);
+  }
+  if(own("hq_training")){   /* a wrestling ring in the yard */
+    var rx = 37, rz = 20.4, h2 = 2.3;
+    box(g,5.2,0.6,5.2,M(0x2b2d33),rx,0.37,rz); box(g,4.9,0.1,4.9,M(0xE01B32),rx,0.72,rz);
+    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(function(c){ cyl(g,0.12,0.12,1.8,8,M(0xEDBA3E),rx+c[0]*h2,1.6,rz+c[1]*h2); });
+    [1.1,1.6].forEach(function(y){ [-1,1].forEach(function(sd){ box(g,4.6,0.06,0.06,MB(0xffffff),rx,y+0.7,rz+sd*h2); box(g,0.06,0.06,4.6,MB(0xffffff),rx+sd*h2,y+0.7,rz); }); });
+    var l3 = label("TRAINING ROOM", 4.2); l3.position.set(rx,4,rz); g.add(l3);
+  }
+  if(own("hq_trophy")){   /* trophy statue */
+    box(g,1.6,0.5,1.6,M(0x7a5a10),45,0.35,20.5); cyl(g,0.15,0.25,1,8,M(0xEDBA3E),45,1.1,20.5); cyl(g,0.7,0.35,0.9,12,M(0xEDBA3E),45,2.05,20.5);
+    var tb = new T.Mesh(new T.SphereGeometry(0.25,8,6), MB(0xfff3b0)); tb.position.set(45,2.75,20.5); g.add(tb);
+    var l4 = label("TROPHY ROOM", 3.6); l4.position.set(45,3.7,20.5); g.add(l4);
+  }
+  if(own("hq_arena")){   /* stepped seating */
+    [0,1,2].forEach(function(i){ var ht = 0.5+i*0.5, x = 50.4+i*1.4; box(g,1.4,ht,5,M(0x8a8a95),x,ht/2,20.5); box(g,1.4,0.1,5,M(i%2 ? 0xffffff : 0xE01B32),x,ht+0.05,20.5); });
+    var l5 = label("ARENA EXPANSION", 4.4); l5.position.set(52,3.4,20.5); g.add(l5);
+  }
+}
+/* rebuild the plot when the player's built items change (called whenever the account data is applied) */
+function refreshHq(s){
+  if(!hqRoot || !T) return;
+  var own = function(id){ return !!(s.db && s.db.owned && s.db.owned[id]); };
+  var key = HQ_ITEMS.map(function(it){ return own(it[0]) ? "1" : "0"; }).join(""); if(hqRoot.userData.key === key) return; hqRoot.userData.key = key;
+  hqRoot.children.slice().forEach(function(c){ hqRoot.remove(c); disposeObj(c); });
+  hqFill(own);
+  if(s.renderer && s.renderer.shadowMap.enabled) hqRoot.traverse(function(o){ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
+}
+
 /* ---------- Buzz City ---------- */
 function buildCity(scene){
   var W = C.WORLD, g = new T.Group(); scene.add(g);
@@ -104,12 +158,8 @@ function buildCity(scene){
   building({x:-42,z:-24,w:26,d:18,h:8,face:1,color:0xd9363e,roof:0x7a0b19,accent:0xf2f2f2,sign:"BUZZ MOTORS",sub:"CARS FOR MANAGERS",signBg:"#7a0b19"});
   building({x:42,z:-24,w:26,d:18,h:8,face:1,color:0xeeeef4,roof:0x9a9aa8,accent:0xE01B32,sign:"BUZZ FASHION",sub:"LOOK LIKE A CHAMPION",signBg:"#101014"});
   building({x:-42,z:26,w:26,d:18,h:9,face:-1,color:0x2c2f3a,roof:0x15151a,accent:0xE01B32,sign:"BUZZ TRAINING",sub:"CENTRE",signBg:"#101014"});
-  /* headquarters: your plot, fenced, with a starter building and construction cones */
-  var hq = new T.Group(); g.add(hq); box(hq,16,6,10,M(0xe0b43a),42,3,29); box(hq,17,0.6,11,M(0x7a5a10),42,6.3,29); box(hq,3.6,4.4,0.5,M(0x15151a),42,2.2,23.9);
-  [-1,1].forEach(function(s){ box(hq,4.5,2.6,0.3,MB(0x9fd8ff),42+s*5.2,3.6,23.9); });
-  sign(hq,"MY HQ","LEVEL 1  |  YOUR COMPANY",12,3,42,8.6,23.6,Math.PI,"#7a5a10");
-  var fm = M(0x8a8a95); [[42,17.2,26,0.4],[42,34.8,26,0.4]].forEach(function(p){ box(hq,p[2],1.2,p[3],fm,p[0],0.7,p[1]); }); [[29.2,26,0.4,18],[54.8,26,0.4,18]].forEach(function(p){ box(hq,p[2],1.2,p[3],fm,p[0],0.7,p[1]); });
-  [[32,19],[52,19],[32,33],[52,33]].forEach(function(p){ cyl(hq,0.1,0.55,1.3,8,M(0xff7a1a),p[0],0.75,p[1]); });
+  /* headquarters: your plot. It starts as an empty building site and grows as the player builds things at the HQ door */
+  hqRoot = new T.Group(); g.add(hqRoot); hqFill(function(){ return false; }); hqRoot.userData.key = HQ_ITEMS.map(function(){ return "0"; }).join("");
   /* arena */
   var ar = new T.Group(); g.add(ar); box(ar,44,12,30,M(0x1b1b22),0,6,-66); var dome = cyl(ar,20,22,5,28,M(0x2a2a34),0,14.5,-66); dome.scale.z = 0.72;
   box(ar,40,0.7,0.7,MB(0xE01B32),0,8,-50.6); box(ar,40,0.7,0.7,MB(0xEDBA3E),0,10,-50.6); box(ar,6,6,0.6,M(0x15151a),0,3,-50.7); box(ar,5,0.3,0.7,MB(0xEDBA3E),0,6.2,-50.6);
@@ -185,7 +235,7 @@ function exit(){
   if(!A) return; var s = A; A = null; s.alive = false; cancelAnimationFrame(s.raf);
   netClose(s); window.removeEventListener("resize", s.onResize); window.removeEventListener("keydown", s.onKD); window.removeEventListener("keyup", s.onKU);
   try{ if(s.renderer){ s.renderer.dispose(); } }catch(e){} if(s.root.parentNode) s.root.parentNode.removeChild(s.root);
-  if(window.__fw === s) window.__fw = null;
+  if(window.__fw === s) window.__fw = null; hqRoot = null;
   document.body.classList.remove("fwlock"); if(location.hash === "#freeworld") location.hash = "#promoter";
 }
 function restart(){ var hs = location.hash; exit(); location.hash = "#freeworld"; if(hs === "#freeworld") enter(); }
@@ -490,7 +540,7 @@ function dbRpc(name, args){
   .then(function(r){ return r.json().catch(function(){ return null; }).then(function(j){ if(!r.ok) throw new Error((j && (j.message || j.hint)) || "error"); return j; }); });
 }
 function setCash(s, n){ var e = document.getElementById("fw-cash"); if(e && n != null) e.textContent = "BUZZ CASH: "+money(n); }
-function dbApply(s, me){ var d = D(s); d.owned = {}; (me.owned||[]).forEach(function(id){ d.owned[id] = true; }); d.look = me.look || {}; d.car = me.active_car || null; if(me.cash != null){ d.cash = me.cash; setCash(s, me.cash); } refreshCarBtn(s); }
+function dbApply(s, me){ var d = D(s); d.owned = {}; (me.owned||[]).forEach(function(id){ d.owned[id] = true; }); d.look = me.look || {}; d.car = me.active_car || null; if(me.cash != null){ d.cash = me.cash; setCash(s, me.cash); } refreshCarBtn(s); refreshHq(s); }
 function dbLoad(s){
   var d = D(s); d.err = null;
   if(!signedIn()){ d.err = "login"; return Promise.resolve(); }
@@ -620,7 +670,7 @@ function hqPanel(s){
   var d = D(s), sel = null;
   panel(s, function(b){
     b.appendChild(h("h3","","MY HEADQUARTERS")); b.appendChild(h("p","","Owner: "+userName()));
-    var prog = h("p","fwstat"), list = h("div"), info = h("p"); b.appendChild(prog); b.appendChild(list); b.appendChild(info);
+    var prog = h("p","fwstat"), list = h("div"), info = h("p"); b.appendChild(prog); b.appendChild(list); b.appendChild(info); var hint = h("p","","Everything you build appears on your plot in Buzz City."); hint.style.cssText = "font-size:12px;opacity:.8"; b.appendChild(hint);
     function own(id){ return dbReady(s) && !!d.owned[id]; }
     function need(id){ var c = d.cat[id], rq = c && c.requires; return rq && !own(rq) ? rq : null; }
     var flow = buyFlow(s, b, function(){ return sel && !need(sel) ? [sel] : []; }, function(){ draw(); });
