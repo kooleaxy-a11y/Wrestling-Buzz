@@ -1,8 +1,8 @@
-/* WRESTLING BUZZ FREE WORLD, Phase 3: interactive locations (Buzz Motors, Buzz Fashion, HQ, Arena, Training) on top of Phase 2 multiplayer and the Phase 1 city.
+/* WRESTLING BUZZ FREE WORLD, Phase 5: driving, a bigger road network and parking, on top of Phase 4 shops (BUZZ CASH checked on the server), Phase 3 locations, Phase 2 multiplayer and the Phase 1 city.
    Needs three.min.js (r128) and fw-core.js, both loaded on demand when a player enters Free World. */
 (function(){
 "use strict";
-var VERSION = "phase-3", GFX_KEY = "wb_fw_gfx", T = null, C = null, A = null;   /* T = THREE, C = FWCore, A = active session */
+var VERSION = "phase-5", GFX_KEY = "wb_fw_gfx", T = null, C = null, A = null;   /* T = THREE, C = FWCore, A = active session */
 function h(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text!==undefined) e.textContent = text; return e; }
 function isTouch(){ return window.matchMedia && matchMedia("(pointer:coarse)").matches; }
 function loadScript(src){ return new Promise(function(ok, no){ var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = function(){ no(new Error("load "+src)); }; document.head.appendChild(s); }); }
@@ -22,7 +22,7 @@ var css = "body.fwlock{overflow:hidden}#fw-root{position:fixed;inset:0;height:10
 "#fw-prompt{position:absolute;left:50%;bottom:calc(215px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:none;white-space:nowrap;font-size:17px;padding:13px 22px;border-radius:14px;background:#E01B32;border:2px solid #fff}#fw-where{pointer-events:none;position:absolute;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:6px 14px;border-radius:99px;background:rgba(10,10,14,.7);font-weight:800;letter-spacing:.06em;font-size:13px;color:#EDBA3E;opacity:0;transition:opacity .4s}"+
 "#fw-load{position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,#4a0d17,#0b0b0d 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:5;text-align:center;padding:20px}#fw-load h2{margin:0;font-size:34px;letter-spacing:.06em;color:#EDBA3E}#fw-load h2 b{color:#fff}.fwbar{width:min(260px,70vw);height:8px;border-radius:5px;background:#26202b;overflow:hidden}.fwbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#E01B32,#EDBA3E);transition:width .25s}"+
 ".fwpanel{position:absolute;inset:0;background:rgba(0,0,0,.72);z-index:4;display:flex;align-items:center;justify-content:center;padding:14px}.fwbox{width:min(380px,100%);background:#101014;border:2px solid #E01B32;border-radius:16px;padding:16px;max-height:90dvh;overflow:auto}.fwbox h3{margin:0 0 10px;color:#EDBA3E}.fwbox p{color:#d8cfbd;font-size:14px;margin:8px 0}.fwbox .fwbtn{display:block;width:100%;margin:8px 0}.fwbox select{width:100%;padding:10px;border-radius:8px;background:#08080a;color:#fff;border:1px solid #4a4a55;font:inherit}"+
-"#fw-map{position:absolute;right:10px;top:calc(66px + env(safe-area-inset-top,0px));width:168px;height:168px;border-radius:12px;border:2px solid #E01B32;background:rgba(10,10,14,.82);display:none}.fwerr{color:#ff7a88;font-weight:700}.fwcard small.fwnet{font-size:11px;color:#9a9aa8}.fwcard small.fwnet.on{color:#7be39b}.fwcard small.fwnet.wait{color:#EDBA3E}.fwcard small.fwnet.bad{color:#ff7a88}.fwrow{display:flex;gap:8px}.fwrow .fwbtn{margin:8px 0}.fwtabs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.fwtabs .fwbtn{width:auto;flex:1;margin:0;padding:8px 6px;font-size:13px}.fwitem{display:flex!important;justify-content:space-between;gap:8px;text-align:left}.fwitem span:last-child{color:#EDBA3E;white-space:nowrap}.fwitem.on span:last-child{color:#241600}.fwstat{font-size:13px;color:#d8cfbd;letter-spacing:2px}.fwprice{color:#EDBA3E;font-weight:800;font-size:18px}.fwcv{width:100%;display:block;border-radius:12px;background:linear-gradient(#22222c,#0b0b0f)}";
+"#fw-map{position:absolute;right:10px;top:calc(66px + env(safe-area-inset-top,0px));width:168px;height:168px;border-radius:12px;border:2px solid #E01B32;background:rgba(10,10,14,.82);display:none}.fwerr{color:#ff7a88;font-weight:700}.fwcard small.fwnet{font-size:11px;color:#9a9aa8}.fwcard small.fwnet.on{color:#7be39b}.fwcard small.fwnet.wait{color:#EDBA3E}.fwcard small.fwnet.bad{color:#ff7a88}.fwrow{display:flex;gap:8px}.fwrow .fwbtn{margin:8px 0}.fwtabs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.fwtabs .fwbtn{width:auto;flex:1;margin:0;padding:8px 6px;font-size:13px}.fwitem{display:flex!important;justify-content:space-between;gap:8px;text-align:left}.fwitem span:last-child{color:#EDBA3E;white-space:nowrap}.fwitem.on span:last-child{color:#241600}.fwstat{font-size:13px;color:#d8cfbd;letter-spacing:2px}.fwprice{color:#EDBA3E;font-weight:800;font-size:18px}.fwcv{width:100%;display:block;border-radius:12px;background:linear-gradient(#22222c,#0b0b0f)}.fwdrive{position:absolute;right:14px;bottom:calc(26px + env(safe-area-inset-bottom,0px));display:none;flex-direction:column;gap:10px;align-items:flex-end}.fwdrive .fwbtn{min-width:104px;min-height:58px;font-size:16px;user-select:none;-webkit-user-select:none}.fwdriving .fwdrive{display:flex}.fwdriving .fwbr,.fwdriving #fw-prompt{display:none!important}#fw-speed{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(26px + env(safe-area-inset-bottom,0px));display:none;padding:8px 16px;border-radius:12px;background:rgba(10,10,14,.72);border:1px solid #4a4a55;color:#fff;font-weight:800;font-size:20px;letter-spacing:1px}.fwdriving #fw-speed{display:block}";
 var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
 
 /* ---------- 3D helpers (low-poly, shared materials to keep it light) ---------- */
@@ -31,6 +31,12 @@ function M(c){ if(!mats[c]) mats[c] = new T.MeshLambertMaterial({color:c, flatSh
 function MB(c){ var k = "b"+c; if(!mats[k]) mats[k] = new T.MeshBasicMaterial({color:c}); return mats[k]; }
 function box(g, w, hh, d, mat, x, y, z){ var m = new T.Mesh(new T.BoxGeometry(w,hh,d), mat); m.position.set(x,y,z); g.add(m); return m; }
 function cyl(g, rt, rb, hh, seg, mat, x, y, z){ var m = new T.Mesh(new T.CylinderGeometry(rt,rb,hh,seg), mat); m.position.set(x,y,z); g.add(m); return m; }
+/* many copies of one shape drawn in a single call (keeps trees, lamps and road paint cheap on phones). list items: [x,y,z, sx,sy,sz, rotY, colourHex] */
+function instanced(g, geo, mat, list){
+  var im = new T.InstancedMesh(geo, mat, list.length), m = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler(), p = new T.Vector3(), sc = new T.Vector3(), col = new T.Color();
+  list.forEach(function(it, i){ e.set(0, it[6]||0, 0); q.setFromEuler(e); p.set(it[0], it[1], it[2]); sc.set(it[3]==null?1:it[3], it[4]==null?1:it[4], it[5]==null?1:it[5]); m.compose(p, q, sc); im.setMatrixAt(i, m); if(it[7] != null){ col.setHex(it[7]); im.setColorAt(i, col); } });
+  im.instanceMatrix.needsUpdate = true; if(im.instanceColor) im.instanceColor.needsUpdate = true; im.frustumCulled = false; g.add(im); return im;
+}
 function textTex(text, w, hh, bg, fg, sub){
   var c = document.createElement("canvas"); c.width = w; c.height = hh; var x = c.getContext("2d"); x.fillStyle = bg; x.fillRect(0,0,w,hh);
   x.strokeStyle = "#EDBA3E"; x.lineWidth = 8; x.strokeRect(6,6,w-12,hh-12); x.fillStyle = fg; x.textAlign = "center"; x.textBaseline = "middle";
@@ -56,15 +62,18 @@ function buildCity(scene){
   var W = C.WORLD, g = new T.Group(); scene.add(g);
   var ground = new T.Mesh(new T.PlaneGeometry(520,520), M(0x4cae6c)); ground.rotation.x = -Math.PI/2; g.add(ground);
   var road = M(0x2b2d33), side = M(0xc9ccd3);
-  box(g,172,0.1,12,road,0,0.05,0); box(g,12,0.1,172,road,0,0.05,0);
-  [-7.5,7.5].forEach(function(z){ box(g,172,0.16,3,side,0,0.08,z); }); [-7.5,7.5].forEach(function(x){ box(g,3,0.16,172,side,x,0.08,0); });
-  for(var i=-80;i<=80;i+=8){ if(Math.abs(i)<14) continue; box(g,3,0.02,0.3,MB(0xffffff),i,0.11,0); box(g,0.3,0.02,3,MB(0xffffff),0,0.11,i); }
+  box(g,212,0.1,12,road,0,0.05,0); box(g,12,0.1,212,road,0,0.05,0);   /* the two main roads */
+  box(g,212,0.1,12,road,0,0.05,-100); box(g,212,0.1,12,road,0,0.05,100); box(g,12,0.1,212,road,-100,0.05,0); box(g,12,0.1,212,road,100,0.05,0);   /* the ring road */
+  [-7.5,7.5].forEach(function(z){ box(g,184,0.16,3,side,0,0.08,z); }); [-7.5,7.5].forEach(function(x){ box(g,3,0.16,184,side,x,0.08,0); });
+  var dh = [], dv = [];
+  for(var i=-88;i<=88;i+=8){ if(Math.abs(i)>=18){ dh.push([i,0.11,0]); dv.push([0,0.11,i]); } if(Math.abs(i)>=10){ dh.push([i,0.11,-100],[i,0.11,100]); dv.push([-100,0.11,i],[100,0.11,i]); } }
+  instanced(g, new T.BoxGeometry(3,0.02,0.3), MB(0xffffff), dh); instanced(g, new T.BoxGeometry(0.3,0.02,3), MB(0xffffff), dv);
   var plaza = new T.Mesh(new T.CircleGeometry(16,40), M(0xdcd5c6)); plaza.rotation.x = -Math.PI/2; plaza.position.y = 0.2; g.add(plaza);
   var ring = new T.Mesh(new T.RingGeometry(10,10.7,40), MB(0xE01B32)); ring.rotation.x = -Math.PI/2; ring.position.y = 0.22; g.add(ring);
   var ring2 = new T.Mesh(new T.RingGeometry(15.2,16,40), MB(0xEDBA3E)); ring2.rotation.x = -Math.PI/2; ring2.position.y = 0.22; g.add(ring2);
   /* fountain */
-  cyl(g,3.4,3.6,0.9,18,M(0xb9c3cf),0,0.65,0); cyl(g,2.9,2.9,0.2,18,MB(0x4fc3f7),0,1.15,0); cyl(g,0.4,0.5,2.6,8,M(0xb9c3cf),0,2.2,0);
-  var top = new T.Mesh(new T.SphereGeometry(0.7,8,6), MB(0x9be3ff)); top.position.set(0,3.7,0); g.add(top);
+  cyl(g,8,8.4,1.1,28,M(0xb9c3cf),0,0.75,0); cyl(g,7.3,7.3,0.2,28,MB(0x4fc3f7),0,1.3,0); cyl(g,3.6,3.9,1.0,20,M(0xb9c3cf),0,1.6,0); cyl(g,3.0,3.0,0.2,20,MB(0x4fc3f7),0,2.15,0); cyl(g,0.7,0.9,3.2,10,M(0xb9c3cf),0,3.6,0);
+  var top = new T.Mesh(new T.SphereGeometry(1.1,10,8), MB(0x9be3ff)); top.position.set(0,5.5,0); g.add(top);
   var cl = label("BUZZ CITY CENTRE", 7); cl.position.set(0,7,0); g.add(cl);
   /* benches */
   W.boxes.filter(function(b){ return b.id==="bench"; }).forEach(function(b){ var long = b.d > b.w;
@@ -73,6 +82,15 @@ function buildCity(scene){
   /* parked cars + lots */
   box(g,22,0.06,6.5,M(0x3a3d45),23,0.12,-13); box(g,22,0.06,6.5,M(0x3a3d45),-23,0.12,13);
   var cc = [0xE01B32,0xf2f2f2,0x2f6fdb,0xEDBA3E,0x222222,0x27ae60]; W.boxes.filter(function(b){ return b.id==="car"; }).forEach(function(b,i){ var c = carMesh(cc[i%cc.length]); c.position.set(b.x,0.12,b.z); g.add(c); });
+  /* painted parking bays */
+  var bl = [];
+  W.parking.forEach(function(b){ var sn = Math.sin(b.rot), cs = Math.cos(b.rot); function L(lx, lz, sx, sz){ bl.push([b.x + lx*cs + lz*sn, 0.115, b.z - lx*sn + lz*cs, sx, 1, sz, b.rot]); } L(1.5,0,0.12,5.4); L(-1.5,0,0.12,5.4); L(0,2.7,3.1,0.12); L(0,-2.7,3.1,0.12); });
+  instanced(g, new T.BoxGeometry(1,0.02,1), MB(0xffffff), bl);
+  /* houses */
+  var hc = [[0xe8d9b8,0xb5483a],[0xc9d6e3,0x5a6a8a],[0xe3c9c9,0x7a3a3a],[0xd6e3c9,0x4a6a4a]];
+  W.boxes.filter(function(b){ return b.id==="house"; }).forEach(function(b, i){ var c = hc[i%4], f = b.z < 0 ? 1 : -1, hg = new T.Group(); g.add(hg);
+    box(hg,b.w,5,b.d,M(c[0]),b.x,2.5,b.z); box(hg,b.w+1,0.8,b.d+1,M(c[1]),b.x,5.4,b.z); box(hg,b.w-2.5,1.6,b.d-1.5,M(c[1]),b.x,6.6,b.z);
+    box(hg,1.6,2.8,0.3,M(0x5a3a1f),b.x,1.4,b.z+f*b.d/2); [-1,1].forEach(function(sd){ box(hg,1.8,1.6,0.3,MB(0x9fd8ff),b.x+sd*3.4,2.8,b.z+f*b.d/2); }); });
   /* buildings */
   function building(o){
     var f = o.face, fz = o.z + f*o.d/2, bg = new T.Group(); g.add(bg);
@@ -103,12 +121,14 @@ function buildCity(scene){
   var tl = label("BUZZ TOWER", 6); tl.position.set(68,31,-62); g.add(tl);
   /* trees and street lights (same spots as the collision posts) */
   var trunkG = new T.CylinderGeometry(0.25,0.32,2.2,6), leafG = new T.ConeGeometry(1.7,3.4,7), greens = [0x2e9c55,0x39b062,0x278a4b];
-  W.posts.forEach(function(p,i){
-    if(p.kind==="tree"){ var t = new T.Mesh(trunkG, M(0x6b4423)); t.position.set(p.x,1.1,p.z); g.add(t); var l = new T.Mesh(leafG, M(greens[i%3])); l.position.set(p.x,3.7,p.z); g.add(l); var l2 = new T.Mesh(leafG, M(greens[(i+1)%3])); l2.scale.set(0.75,0.75,0.75); l2.position.set(p.x,5.3,p.z); g.add(l2); }
-    else { cyl(g,0.12,0.16,5.2,6,M(0x3a3a44),p.x,2.6,p.z); var b = new T.Mesh(new T.SphereGeometry(0.4,8,6), MB(0xfff3b0)); b.position.set(p.x,5.5,p.z); g.add(b); }
-  });
+  var trees = W.posts.filter(function(p){ return p.kind==="tree"; }), lamps = W.posts.filter(function(p){ return p.kind==="lamp"; });
+  instanced(g, trunkG, M(0x6b4423), trees.map(function(p){ return [p.x,1.1,p.z]; }));
+  instanced(g, leafG, M(0xffffff), trees.map(function(p,i){ return [p.x,3.7,p.z,1,1,1,0,greens[i%3]]; }));
+  instanced(g, leafG, M(0xffffff), trees.map(function(p,i){ return [p.x,5.3,p.z,0.75,0.75,0.75,0,greens[(i+1)%3]]; }));
+  instanced(g, new T.CylinderGeometry(0.12,0.16,5.2,6), M(0x3a3a44), lamps.map(function(p){ return [p.x,2.6,p.z]; }));
+  instanced(g, new T.SphereGeometry(0.4,8,6), MB(0xfff3b0), lamps.map(function(p){ return [p.x,5.5,p.z]; }));
   /* border hedge */
-  var hm = M(0x2a7a44), b = W.bounds; box(g,180,2.2,1.2,hm,0,1.1,b.minZ-0.6); box(g,180,2.2,1.2,hm,0,1.1,b.maxZ+0.6); box(g,1.2,2.2,180,hm,b.minX-0.6,1.1,0); box(g,1.2,2.2,180,hm,b.maxX+0.6,1.1,0);
+  var hm = M(0x2a7a44), b = W.bounds, hw = b.maxX-b.minX+10; box(g,hw,2.2,1.2,hm,0,1.1,b.minZ-0.6); box(g,hw,2.2,1.2,hm,0,1.1,b.maxZ+0.6); box(g,1.2,2.2,hw,hm,b.minX-0.6,1.1,0); box(g,1.2,2.2,hw,hm,b.maxX+0.6,1.1,0);
   return g;
 }
 
@@ -179,7 +199,7 @@ function start(s, prog, fail){
   var me = makeHuman({name:userName()}); scene.add(me); if(q==="high") me.traverse(function(o){ if(o.isMesh) o.castShadow = true; });
   var P = s.p = C.createState(); me.position.set(P.x,0.15,P.z); me.rotation.y = P.rot;
   s.scene = scene; s.me = me; s.camPos = new T.Vector3(P.x, 6, P.z+10);
-  buildHud(s); netStart(s); prog(100);
+  buildHud(s); netStart(s); dbLoad(s); prog(100);
   var ld = document.getElementById("fw-load"); setTimeout(function(){ if(ld && ld.parentNode) ld.parentNode.removeChild(ld); showWhere(s, "WELCOME TO BUZZ CITY"); }, 250);
   s.onResize = function(){ renderer.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth/innerHeight; cam.updateProjectionMatrix(); }; window.addEventListener("resize", s.onResize);
   s.onKD = function(e){ var k = e.key.toLowerCase(); if(["arrowup","arrowdown","arrowleft","arrowright"," "].indexOf(k)>=0) e.preventDefault(); s.keys[k] = true; if(e.repeat) return;
@@ -198,16 +218,76 @@ function frame(s, now){
   var P = s.p, k = s.keys, f = (k.w||k.arrowup?1:0) - (k.s||k.arrowdown?1:0), r = (k.d||k.arrowright?1:0) - (k.a||k.arrowleft?1:0);
   if(s.joy.id!==null){ f += -s.joy.y; r += s.joy.x; }
   var sn = Math.sin(s.yaw), cs = Math.cos(s.yaw), dx = f*(-sn) + r*cs, dz = f*(-cs) + r*(-sn), run = !!(k.shift || s.run);
-  if(!s.paused) C.step(P, {dx:dx, dz:dz, run:run}, dt);
-  s.me.position.set(P.x, 0.15, P.z); s.me.rotation.y = P.rot; s.me.userData.update(dt, s.paused?0:P.speed, P.running);
+  var drv = !!(s.car && s.car.driving);
+  if(drv) stepDrive(s, dt); else if(!s.paused) C.step(P, {dx:dx, dz:dz, run:run}, dt);
+  s.me.visible = !drv; s.me.position.set(P.x, 0.15, P.z); s.me.rotation.y = P.rot; s.me.userData.update(dt, s.paused||drv?0:P.speed, P.running);
   updateRemotes(s, dt); netSend(s, now);
-  /* follow camera */
-  var tx = P.x, ty = 2.1, tz = P.z, cp = Math.cos(s.pitch), want = new T.Vector3(tx + Math.sin(s.yaw)*cp*s.dist, ty + Math.sin(s.pitch)*s.dist, tz + Math.cos(s.yaw)*cp*s.dist);
-  s.camPos.lerp(want, 1 - Math.exp(-dt*9)); s.cam.position.copy(s.camPos); s.cam.lookAt(tx, ty, tz);
+  /* follow camera (swings in behind the car when driving) */
+  var tx = P.x, ty = drv ? 1.7 : 2.1, tz = P.z;
+  if(drv){ var cst = s.car.st, sp2 = Math.abs(cst.speed); if(!s.drag && sp2 > 1){ s.yaw += C.angDiff(s.yaw, cst.rot + Math.PI) * (1 - Math.exp(-dt*2.6)); } s.dist = 9 + Math.min(4, sp2*0.12); tx += Math.sin(cst.rot)*2.5; tz += Math.cos(cst.rot)*2.5;
+    var fov = 58 + Math.min(1, sp2/s.car.spec.max)*12; if(Math.abs(s.cam.fov - fov) > 0.15){ s.cam.fov += (fov - s.cam.fov)*Math.min(1, dt*4); s.cam.updateProjectionMatrix(); } }
+  var cp = Math.cos(s.pitch), want = new T.Vector3(tx + Math.sin(s.yaw)*cp*s.dist, ty + Math.sin(s.pitch)*s.dist, tz + Math.cos(s.yaw)*cp*s.dist);
+  s.camPos.lerp(want, 1 - Math.exp(-dt*(drv ? 7 : 9))); s.cam.position.copy(s.camPos); s.cam.lookAt(tx, ty, tz);
   s.renderer.render(s.scene, s.cam);
   /* places */
-  var sp = C.nearestSpot(P.x, P.z); if((sp && sp.id) !== s.spotId){ s.spotId = sp && sp.id; if(sp) showWhere(s, sp.name); updatePrompt(s, sp); }
+  var sp = drv ? null : C.nearestSpot(P.x, P.z), cn = !drv && carNear(s), pr = cn ? {id:"mycar", interact:true, label:"GET IN "+(carDefOf(s.car.id) || {name:"CAR"}).name.toUpperCase()} : sp;
+  if((pr && pr.id) !== s.spotId){ s.spotId = pr && pr.id; if(sp && !cn) showWhere(s, sp.name); updatePrompt(s, pr); }
   if(s.mapOn && s.frames%3===0) drawMap(s);
+}
+
+/* ---------- driving (Phase 5) ---------- */
+function carDefOf(id){ for(var i=0;i<CARS.length;i++) if(CARS[i].id === id) return CARS[i]; return null; }
+function placeCarMesh(m, x, z, rot){ var pr = C.WORLD.plazaR; m.position.set(x, x*x+z*z < pr*pr ? 0.2 : 0.12, z); m.rotation.y = rot - Math.PI/2; }
+function carNear(s){ var c = s.car; if(!c || c.driving) return false; var dx = s.p.x-c.st.x, dz = s.p.z-c.st.z; return dx*dx+dz*dz < 25; }
+function bayFree(s, b){
+  var n = s.net, id, r; if(!n) return true;
+  for(id in n.remotes){ r = n.remotes[id]; if(Math.sqrt((r.x-b.x)*(r.x-b.x)+(r.z-b.z)*(r.z-b.z)) < 2.6) return false; if(r.cm && Math.sqrt((r.cx-b.x)*(r.cx-b.x)+(r.cz-b.z)*(r.cz-b.z)) < 3.6) return false; }
+  return true;
+}
+function pickBay(s){ var P = s.p, best = -1, bd = 1e9; C.WORLD.parking.forEach(function(b, i){ if(!bayFree(s, b)) return; var d = Math.sqrt((b.x-P.x)*(b.x-P.x)+(b.z-P.z)*(b.z-P.z)); if(d < bd){ bd = d; best = i; } }); return best; }
+function makeOwnCar(s, id, x, z, rot){
+  removeOwnCar(s); var def = carDefOf(id), spec = C.carSpec(id); if(!def || !spec) return;
+  var mesh = carModel(def); placeCarMesh(mesh, x, z, rot); s.scene.add(mesh); if(s.renderer.shadowMap.enabled) mesh.traverse(function(o){ if(o.isMesh) o.castShadow = true; });
+  s.car = {id:id, spec:spec, st:C.createCar(x, z, rot), mesh:mesh, driving:false};
+}
+function removeOwnCar(s){ var c = s.car; if(!c) return; if(c.driving) leaveDrivingUi(s); s.scene.remove(c.mesh); disposeObj(c.mesh); s.car = null; }
+function leaveDrivingUi(s){ s.root.classList.remove("fwdriving"); if(s.walkDist) s.dist = s.walkDist; if(s.cam && s.cam.fov !== 58){ s.cam.fov = 58; s.cam.updateProjectionMatrix(); } }
+function netCar(s, msg){ var n = s.net; if(n && n.live && n.room){ try{ n.room.send("car", msg); }catch(e){} n.lastSent = null; return true; } return false; }
+/* the Car button: bring your car to the nearest free parking bay, or get in if it is right here */
+function carButton(s){
+  var d = D(s); if(s.car && s.car.driving) return;
+  if(!dbReady(s) || !d.car){ showWhere(s, d.err === "login" ? "LOG IN TO USE YOUR CAR" : "BUY A CAR AT BUZZ MOTORS"); return; }
+  if(s.car && s.car.id === d.car && carNear(s)){ enterCar(s); return; }
+  var bi = pickBay(s); if(bi < 0){ showWhere(s, "NO FREE PARKING NEARBY"); return; }
+  var b = C.WORLD.parking[bi];
+  if(netCar(s, {op:"spawn", bay:bi})){ showWhere(s, "CALLING YOUR CAR..."); return; }
+  makeOwnCar(s, d.car, b.x, b.z, b.rot); showWhere(s, "YOUR CAR IS AT "+b.name.toUpperCase());
+}
+function enterCar(s){
+  var c = s.car; if(!c || c.driving) return; c.driving = true; var P = s.p; P.x = c.st.x; P.z = c.st.z; P.rot = c.st.rot; P.vx = 0; P.vz = 0; P.speed = 0; P.running = false;
+  netCar(s, {op:"in"}); s.walkDist = s.dist; s.dist = 9.5; s.pitch = 0.3; s.root.classList.add("fwdriving"); showWhere(s, "DRIVING: "+(carDefOf(c.id) || {name:""}).name.toUpperCase());
+}
+function exitCar(s){
+  var c = s.car; if(!c || !c.driving) return; if(Math.abs(c.st.speed) > 4){ showWhere(s, "SLOW DOWN TO GET OUT"); return; }
+  var st = c.st, sp = c.spec, sn = Math.sin(st.rot), cs = Math.cos(st.rot), side = sp.wid/2 + 1.1, end = sp.len/2 + 1.1, cand = [[cs,-sn,side],[-cs,sn,side],[-sn,-cs,end],[sn,cs,end]], pos = null;
+  for(var i = 0; i < cand.length && !pos; i++){ var q = {x:st.x+cand[i][0]*cand[i][2], z:st.z+cand[i][1]*cand[i][2]}, o = {x:q.x, z:q.z}; C.resolve(q); if(Math.abs(q.x-o.x) < 0.05 && Math.abs(q.z-o.z) < 0.05) pos = q; }
+  if(!pos){ showWhere(s, "NO ROOM TO GET OUT"); return; }
+  c.driving = false; st.vx = 0; st.vz = 0; st.speed = 0; var P = s.p; P.x = pos.x; P.z = pos.z; P.rot = st.rot; P.vx = 0; P.vz = 0; P.speed = 0;
+  placeCarMesh(c.mesh, st.x, st.z, st.rot); leaveDrivingUi(s); netCar(s, {op:"out"});
+}
+function stepDrive(s, dt){
+  var c = s.car, k = s.keys, pd = s.pedal || (s.pedal = {gas:false, brake:false, hb:false}), P = s.p, j = s.joy, jy = (j.id !== null && Math.abs(j.y) > 0.3) ? j.y : 0, jx = (j.id !== null && Math.abs(j.x) > 0.12) ? j.x : 0;
+  if(!s.paused){
+    var thr = (k.w||k.arrowup ? 1 : 0) - (k.s||k.arrowdown ? 1 : 0) + (pd.gas ? 1 : 0) - (pd.brake ? 1 : 0) - jy, steer = (k.d||k.arrowright ? 1 : 0) - (k.a||k.arrowleft ? 1 : 0) + jx;
+    C.stepCar(c.st, {thr:thr, steer:steer, hb:!!(k[" "] || pd.hb)}, dt, c.spec);
+  }
+  P.x = c.st.x; P.z = c.st.z; P.rot = c.st.rot; P.speed = Math.abs(c.st.speed); P.running = false; P.vx = c.st.vx; P.vz = c.st.vz;
+  placeCarMesh(c.mesh, c.st.x, c.st.z, c.st.rot);
+  var e = document.getElementById("fw-speed"); if(e && s.frames % 3 === 0) e.textContent = Math.round(Math.abs(c.st.speed)*3.6)+" km/h";
+}
+function refreshCarBtn(s){
+  var d = D(s), b = document.getElementById("fw-carbtn"); if(b) b.style.display = d.car ? "block" : "none";
+  if(s.car && !s.car.driving && s.car.id !== d.car){ removeOwnCar(s); netCar(s, {op:"remove"}); }
 }
 
 /* ---------- multiplayer (Phase 2) ---------- */
@@ -223,15 +303,27 @@ function netStatus(cls, text){ var e = document.getElementById("fw-net"); if(!e)
 function remoteCount(s){ var c = 0; if(s.net) for(var k in s.net.remotes) c++; return c; }
 function refreshNet(s){ if(s.net && s.net.live) netStatus("on", "ONLINE: "+(remoteCount(s)+1)+" in city"); }
 function disposeObj(o){ o.traverse(function(c){ if(c.geometry) c.geometry.dispose(); if(c.material && c.material.map){ c.material.map.dispose(); c.material.dispose(); } }); }
+function remoteMesh(p){
+  var id = p[0], look = p[2]|0, o = {name:p[1]+(p[6] ? " \u2713" : ""), shirt:LOOK_SHIRTS[look%LOOK_SHIRTS.length], skin:LOOK_SKINS[(look+id)%LOOK_SKINS.length], hair:LOOK_HAIR[(look*3+id)%LOOK_HAIR.length]};
+  if(p[7]) Object.assign(o, lookProps(p[7]));   /* their saved outfit, as checked by the server */
+  return makeHuman(o);
+}
+function setRemoteCar(s, r, id, x, z, rot, d){
+  if(r.cm && r.cid !== id){ s.scene.remove(r.cm); disposeObj(r.cm); r.cm = null; }
+  r.cid = id || null; r.drv = !!d; if(!id) return;
+  if(!r.cm){ var def = carDefOf(id); if(!def) return; r.cm = carModel(def); s.scene.add(r.cm); }
+  r.cx = x; r.cz = z; r.crot = rot; if(!d) placeCarMesh(r.cm, x, z, rot);
+}
 function addRemote(s, p){
   var n = s.net, id = p[0], look = p[2]|0; if(!n || n.remotes[id]) return;
-  var mesh = makeHuman({name:p[1]+(p[6] ? " \u2713" : ""), shirt:LOOK_SHIRTS[look%LOOK_SHIRTS.length], skin:LOOK_SKINS[(look+id)%LOOK_SKINS.length], hair:LOOK_HAIR[(look*3+id)%LOOK_HAIR.length]});
+  var mesh = remoteMesh(p);
   mesh.position.set(p[3], 0.15, p[4]); mesh.rotation.y = p[5]; s.scene.add(mesh);
   if(s.renderer.shadowMap.enabled) mesh.traverse(function(o){ if(o.isMesh) o.castShadow = true; });
-  n.remotes[id] = {id:id, name:p[1]+(p[6] ? " \u2713" : ""), mesh:mesh, x:p[3], z:p[4], rot:p[5], tx:p[3], tz:p[4], trot:p[5], run:false, sp:0};
+  n.remotes[id] = {id:id, raw:p[1], ver:p[6], idx:look, name:p[1]+(p[6] ? " \u2713" : ""), mesh:mesh, x:p[3], z:p[4], rot:p[5], tx:p[3], tz:p[4], trot:p[5], run:false, sp:0};
+  if(p[8]) setRemoteCar(s, n.remotes[id], p[8].id, p[8].x, p[8].z, p[8].rot, p[8].d);
   refreshNet(s);
 }
-function removeRemote(s, id){ var n = s.net, r = n && n.remotes[id]; if(!r) return; s.scene.remove(r.mesh); disposeObj(r.mesh); delete n.remotes[id]; refreshNet(s); }
+function removeRemote(s, id){ var n = s.net, r = n && n.remotes[id]; if(!r) return; s.scene.remove(r.mesh); disposeObj(r.mesh); if(r.cm){ s.scene.remove(r.cm); disposeObj(r.cm); } delete n.remotes[id]; refreshNet(s); }
 function clearRemotes(s){ if(!s.net) return; Object.keys(s.net.remotes).forEach(function(id){ removeRemote(s, id); }); }
 function signedIn(){ try{ return typeof readSession === "function" && !!readSession(); }catch(e){ return false; } }
 function netStart(s){
@@ -252,9 +344,16 @@ function netJoin(s, url){
     room.onMessage("welcome", function(m){ n.myId = m.id; clearRemotes(s); (m.players||[]).forEach(function(p){ if(p[0] === m.id){ n.me = {name:p[1], verified:!!p[6]}; } else addRemote(s, p); }); refreshNet(s); });
     room.onMessage("join", function(p){ addRemote(s, p); });
     room.onMessage("leave", function(id){ removeRemote(s, id); });
-    room.onMessage("snap", function(rows){ rows.forEach(function(r){ var o = n.remotes[r[0]]; if(o){ o.tx = r[1]; o.tz = r[2]; o.trot = r[3]; o.run = !!r[4]; } }); });
+    room.onMessage("snap", function(rows){ rows.forEach(function(r){ var o = n.remotes[r[0]]; if(o){ o.tx = r[1]; o.tz = r[2]; o.trot = r[3]; o.run = !!r[4]; if(o.cm) o.drv = !!r[5]; } }); });
     room.onMessage("wave", function(id){ var o = n.remotes[id]; if(o) o.mesh.userData.wave(); });
-    room.onMessage("fix", function(m){ s.p.x = m.x; s.p.z = m.z; s.p.vx = 0; s.p.vz = 0; n.lastSent = null; });
+    room.onMessage("look", function(m){ var r = n.remotes[m[0]]; if(!r) return; var old = r.mesh, nm = remoteMesh([m[0], r.raw, r.idx, 0, 0, 0, r.ver, m[1]]); nm.position.copy(old.position); nm.rotation.y = old.rotation.y; s.scene.remove(old); disposeObj(old); s.scene.add(nm); r.mesh = nm; });
+    room.onMessage("fix", function(m){ s.p.x = m.x; s.p.z = m.z; s.p.vx = 0; s.p.vz = 0; n.lastSent = null; if(s.car && s.car.driving){ s.car.st.x = m.x; s.car.st.z = m.z; s.car.st.vx = 0; s.car.st.vz = 0; s.car.st.speed = 0; } });
+    room.onMessage("car", function(m){ var pid = m[0], id = m[1];
+      if(pid === n.myId){ if(!id){ if(s.car && !s.car.driving) removeOwnCar(s); return; } if(s.car && s.car.driving) return;
+        if(!s.car || s.car.id !== id || Math.abs(s.car.st.x-m[2]) > 0.5 || Math.abs(s.car.st.z-m[3]) > 0.5){ makeOwnCar(s, id, m[2], m[3], m[4]); if(!s.carSeen){ showWhere(s, "YOUR CAR IS READY"); } } return; }
+      var r = n.remotes[pid]; if(r) setRemoteCar(s, r, id, m[2], m[3], m[4], m[5]); });
+    room.onMessage("carno", function(why){ if(s.car && s.car.driving){ s.car.driving = false; leaveDrivingUi(s); }
+      showWhere(s, why === "nocar" ? "BUY A CAR AT BUZZ MOTORS" : why === "busy" ? "THAT SPOT IS TAKEN, TRY AGAIN" : why === "login" ? "LOG IN TO USE YOUR CAR" : "COULDN'T GET YOUR CAR, TRY AGAIN"); });
     room.onError(function(){});
     room.send("hello");
     room.onLeave(function(code){ n.live = false; n.room = null; clearRemotes(s); if(!s.alive || n.closed) return;
@@ -286,6 +385,7 @@ function updateRemotes(s, dt){
     var sp = dt > 0 ? Math.sqrt((r.x-ox)*(r.x-ox)+(r.z-oz)*(r.z-oz))/dt : 0; r.sp = r.sp*0.7 + sp*0.3;
     var m = r.mesh, ex = r.x-P.x, ez = r.z-P.z; m.position.set(r.x, 0.15, r.z); m.rotation.y = r.rot; m.visible = ex*ex+ez*ez < SHOW_DIST2;
     m.userData.update(dt, r.sp, r.run);
+    if(r.cm){ if(r.drv){ placeCarMesh(r.cm, r.x, r.z, r.rot); m.visible = false; r.cm.visible = ex*ex+ez*ez < SHOW_DIST2; } else { var cx = r.cx-P.x, cz = r.cz-P.z; r.cm.visible = cx*cx+cz*cz < SHOW_DIST2; } }
   }
 }
 function doWave(s){ s.me.userData.wave(); var n = s.net; if(n && n.live && n.room){ try{ n.room.send("wave"); }catch(e){} } }
@@ -306,9 +406,10 @@ function showWhere(s, text){ var w = document.getElementById("fw-where"); if(!w)
 function updatePrompt(s, sp){ var p = document.getElementById("fw-prompt"); if(!p) return; if(sp && sp.interact){ p.textContent = sp.label; p.style.display = "block"; } else p.style.display = "none"; }
 function panel(s, build){ closePanel(s); var p = h("div","fwpanel"); p.id = "fw-panel"; var b = h("div","fwbox"); p.appendChild(b); build(b); s.root.appendChild(p); s.paused = true; }
 function closePanel(s){ if(s.panelCleanup){ try{ s.panelCleanup(); }catch(e){} s.panelCleanup = null; } var p = document.getElementById("fw-panel"); if(p) p.parentNode.removeChild(p); s.paused = false; }
-/* ---------- locations (Phase 3) ---------- */
+/* ---------- locations and shops (Phase 3 and 4) ---------- */
 function money(n){ return "B "+Number(n).toLocaleString(); }
 function stars(n){ return new Array(n+1).join("\u25A0")+new Array(6-n).join("\u25A1"); }
+function bar(n, total){ return new Array(n+1).join("\u25A0")+new Array(total-n+1).join("\u25A1"); }
 function closeBtn(s, b, text){ var ok = h("button","fwbtn red",text||"Close"); ok.type = "button"; ok.addEventListener("click", function(){ closePanel(s); }); b.appendChild(ok); return ok; }
 function infoPanel(s, title, lines, rows){ panel(s, function(b){ b.appendChild(h("h3","",title)); lines.forEach(function(t){ b.appendChild(h("p","",t)); }); (rows||[]).forEach(function(r){ var d = h("div","fwitem fwbtn"); d.style.cursor = "default"; d.appendChild(h("span","",r[0])); d.appendChild(h("span","",r[1])); b.appendChild(d); }); closeBtn(s, b); }); }
 
@@ -327,16 +428,16 @@ function miniView(s, b, hgt){
   s.panelCleanup = mv.dispose; return mv;
 }
 
-/* ---- Buzz Motors ---- */
+/* ---- what exists (names and looks here; PRICES live only on the server) ---- */
 var CARS = [
-  {name:"Buzz Pup", type:"Hatchback", price:8000, speed:2, handling:4, color:0x27ae60, len:3.4, wid:1.8, bodyH:0.7, cabinLen:2.0, cabinH:0.7, cabinX:-0.15, wheel:0.4},
-  {name:"Rookie Rider", type:"Sedan", price:15000, speed:3, handling:3, color:0x2f6fdb, len:4.3, wid:1.9, bodyH:0.75, cabinLen:2.2, cabinH:0.7, cabinX:-0.2, wheel:0.42},
-  {name:"Tag Team Van", type:"Van", price:30000, speed:2, handling:2, color:0xf2f2f2, len:4.6, wid:2.0, bodyH:0.8, cabinLen:3.6, cabinH:1.1, cabinX:-0.3, wheel:0.45},
-  {name:"Main Event", type:"Coupe", price:40000, speed:4, handling:4, color:0xE01B32, len:4.3, wid:1.9, bodyH:0.65, cabinLen:1.7, cabinH:0.55, cabinX:-0.3, wheel:0.42},
-  {name:"Heavyweight", type:"Pickup", price:55000, speed:3, handling:2, color:0xEDBA3E, len:5.0, wid:2.0, bodyH:0.85, cabinLen:1.8, cabinH:0.8, cabinX:0.9, wheel:0.5, bed:true},
-  {name:"Champion SUV", type:"SUV", price:75000, speed:3, handling:3, color:0x222228, len:4.7, wid:2.0, bodyH:0.95, cabinLen:3.2, cabinH:0.8, cabinX:-0.2, wheel:0.52},
-  {name:"Hall of Fame GT", type:"Sports car", price:150000, speed:5, handling:5, color:0xff7a1a, len:4.5, wid:1.95, bodyH:0.55, cabinLen:1.6, cabinH:0.5, cabinX:-0.25, wheel:0.42, spoiler:true},
-  {name:"Title Belt Limo", type:"Limousine", price:250000, speed:2, handling:1, color:0x101014, len:7.2, wid:1.95, bodyH:0.8, cabinLen:5.2, cabinH:0.65, cabinX:-0.3, wheel:0.44}
+  {id:"car_pup", name:"Buzz Pup", type:"Hatchback", speed:2, handling:4, color:0x27ae60, len:3.4, wid:1.8, bodyH:0.7, cabinLen:2.0, cabinH:0.7, cabinX:-0.15, wheel:0.4},
+  {id:"car_rookie", name:"Rookie Rider", type:"Sedan", speed:3, handling:3, color:0x2f6fdb, len:4.3, wid:1.9, bodyH:0.75, cabinLen:2.2, cabinH:0.7, cabinX:-0.2, wheel:0.42},
+  {id:"car_van", name:"Tag Team Van", type:"Van", speed:2, handling:2, color:0xf2f2f2, len:4.6, wid:2.0, bodyH:0.8, cabinLen:3.6, cabinH:1.1, cabinX:-0.3, wheel:0.45},
+  {id:"car_main", name:"Main Event", type:"Coupe", speed:4, handling:4, color:0xE01B32, len:4.3, wid:1.9, bodyH:0.65, cabinLen:1.7, cabinH:0.55, cabinX:-0.3, wheel:0.42},
+  {id:"car_heavy", name:"Heavyweight", type:"Pickup", speed:3, handling:2, color:0xEDBA3E, len:5.0, wid:2.0, bodyH:0.85, cabinLen:1.8, cabinH:0.8, cabinX:0.9, wheel:0.5, bed:true},
+  {id:"car_suv", name:"Champion SUV", type:"SUV", speed:3, handling:3, color:0x222228, len:4.7, wid:2.0, bodyH:0.95, cabinLen:3.2, cabinH:0.8, cabinX:-0.2, wheel:0.52},
+  {id:"car_gt", name:"Hall of Fame GT", type:"Sports car", speed:5, handling:5, color:0xff7a1a, len:4.5, wid:1.95, bodyH:0.55, cabinLen:1.6, cabinH:0.5, cabinX:-0.25, wheel:0.42, spoiler:true},
+  {id:"car_limo", name:"Title Belt Limo", type:"Limousine", speed:2, handling:1, color:0x101014, len:7.2, wid:1.95, bodyH:0.8, cabinLen:5.2, cabinH:0.65, cabinX:-0.3, wheel:0.44}
 ];
 function carModel(c){
   var g = new T.Group(), w = c.wheel, by = w + c.bodyH/2 - 0.1;
@@ -350,53 +451,181 @@ function carModel(c){
   xs.forEach(function(x){ [-1,1].forEach(function(z){ var wh = cyl(g, w, w, 0.38, 12, M(0x15151a), x, w, z*(c.wid/2)); wh.rotation.x = Math.PI/2; }); });
   return g;
 }
-function motorsPanel(s){
-  var i = 0;
-  panel(s, function(b){
-    b.appendChild(h("h3","","BUZZ MOTORS")); var mv = miniView(s, b, 190);
-    var nm = h("h3"), tp = h("p"), pr = h("div","fwprice"), sp = h("p","fwstat"), hd = h("p","fwstat"); nm.style.marginTop = "12px"; [nm, tp, pr, sp, hd].forEach(function(e){ b.appendChild(e); });
-    function show(){ var c = CARS[i]; mv.set(carModel(c), Math.max(8, c.len*1.7), 3.2, 0.9); nm.textContent = c.name+"  ("+(i+1)+"/"+CARS.length+")"; tp.textContent = c.type; pr.textContent = money(c.price); sp.textContent = "Speed     "+stars(c.speed); hd.textContent = "Handling  "+stars(c.handling); }
-    var row = h("div","fwrow"); [["\u25C0 Previous",-1],["Next \u25B6",1]].forEach(function(o){ var bt = h("button","fwbtn",o[0]); bt.type = "button"; bt.addEventListener("click", function(){ i = (i+o[1]+CARS.length)%CARS.length; show(); }); row.appendChild(bt); }); b.appendChild(row);
-    b.appendChild(h("p","","You can look at every car for now. Buying and driving open in the next update, when your BUZZ CASH is connected to the shop.")); closeBtn(s, b); show();
-  });
-}
-
-/* ---- Buzz Fashion ---- */
-var SHOP = {
-  Tops: {key:"shirt", items:[["Buzz Red Tee",500,0xE01B32],["White Tee",400,0xf2f2f2],["Black Tee",400,0x1b1b22],["Champion Gold Tee",1200,0xEDBA3E],["Promoter Blue Polo",900,0x2f6fdb],["Mint Polo",900,0x27ae60]]},
-  Jackets: {key:"jacket", items:[["Black Leather",3500,0x15151a],["Red Satin",2800,0xb3122a],["Denim",2200,0x3b5f8f],["Gold Bomber",5000,0xc9962a]]},
-  Trousers: {key:"pants", items:[["Black Jeans",800,0x22232b],["Blue Jeans",800,0x2f4f86],["Grey Slacks",1200,0x6b6e78],["White Suit Trousers",1800,0xe8e8ee]]},
-  Shoes: {key:"shoes", items:[["White Trainers",900,0xf2f2f2],["Black Boots",1300,0x0e0e12],["Gold Sneakers",2500,0xEDBA3E],["Red High-tops",1500,0xE01B32]]},
-  Caps: {key:"cap", items:[["Buzz Red Cap",600,0xE01B32],["Black Cap",600,0x15151a],["Gold Cap",1000,0xEDBA3E]]}
+var SHOP = {   /* [id, name, colour] */
+  Tops: {kind:"top", items:[["top_red","Buzz Red Tee",0xE01B32],["top_white","White Tee",0xf2f2f2],["top_black","Black Tee",0x1b1b22],["top_gold","Champion Gold Tee",0xEDBA3E],["top_blue","Promoter Blue Polo",0x2f6fdb],["top_mint","Mint Polo",0x27ae60]]},
+  Jackets: {kind:"jacket", items:[["jkt_leather","Black Leather",0x15151a],["jkt_satin","Red Satin",0xb3122a],["jkt_denim","Denim",0x3b5f8f],["jkt_bomber","Gold Bomber",0xc9962a]]},
+  Trousers: {kind:"trousers", items:[["trs_black","Black Jeans",0x22232b],["trs_blue","Blue Jeans",0x2f4f86],["trs_grey","Grey Slacks",0x6b6e78],["trs_white","White Suit Trousers",0xe8e8ee]]},
+  Shoes: {kind:"shoes", items:[["shoe_white","White Trainers",0xf2f2f2],["shoe_boots","Black Boots",0x0e0e12],["shoe_gold","Gold Sneakers",0xEDBA3E],["shoe_red","Red High-tops",0xE01B32]]},
+  Caps: {kind:"cap", items:[["cap_red","Buzz Red Cap",0xE01B32],["cap_black","Black Cap",0x15151a],["cap_gold","Gold Cap",0xEDBA3E]]}
 };
+var HQ_ITEMS = [["hq_basic","Basic headquarters","A solid building on your plot."],["hq_upgraded","Upgraded headquarters","A bigger, better building."],["hq_locker","Superstar locker room","Somewhere for your talent to get ready."],["hq_training","Training room","A gym and ring for your roster."],["hq_office","Office","Where you run the business."],["hq_trophy","Trophy room","Show off your wins."],["hq_arena","Arena expansion","Extra seating for your shows."]];
+var ITEMS = {}, LOOK_PROP = {top:"shirt", jacket:"jacket", trousers:"pants", shoes:"shoes", cap:"cap"};
+CARS.forEach(function(c){ ITEMS[c.id] = {id:c.id, kind:"car", name:c.name}; });
+Object.keys(SHOP).forEach(function(t){ SHOP[t].items.forEach(function(it){ ITEMS[it[0]] = {id:it[0], kind:SHOP[t].kind, name:it[1], color:it[2]}; }); });
+HQ_ITEMS.forEach(function(it){ ITEMS[it[0]] = {id:it[0], kind:"hq", name:it[1]}; });
+/* ids saved on the account ({top:"top_red"}) -> colours the character model understands ({shirt:0xE01B32}) */
+function lookProps(ids){ var o = {}; for(var k in (ids||{})){ var it = ITEMS[ids[k]], pk = LOOK_PROP[k]; if(it && pk && it.color != null) o[pk] = it.color; } return o; }
 function setLook(s, look){
   var old = s.me, pos = old.position.clone(), rot = old.rotation.y; s.scene.remove(old); disposeObj(old);
   var m = makeHuman(Object.assign({name:userName()}, look)); m.position.copy(pos); m.rotation.y = rot; s.scene.add(m);
   if(s.renderer.shadowMap.enabled) m.traverse(function(o){ if(o.isMesh) o.castShadow = true; });
   s.me = m; s.look = look;
 }
-function fashionPanel(s){
-  var pick = Object.assign({}, s.look || {}), tab = "Tops", sel = {};   /* sel: key -> {price} for what is being tried on */
+
+/* ---- your Free World account on the server (prices, ownership, saved look) ---- */
+function D(s){ if(!s.db) s.db = {ready:false, cat:{}, owned:{}, look:{}, car:null, cash:null, err:null}; return s.db; }
+function dbReady(s){ return !!(s.db && s.db.ready); }
+function price(s, id){ var c = s.db && s.db.cat[id]; return c ? c.price : null; }
+function dbRpc(name, args){
+  return getUserToken().then(function(t){ if(!t) throw new Error("not_signed_in");
+    return fetch(SUPABASE_URL+"/rest/v1/rpc/"+name, {method:"POST", headers:{apikey:SUPABASE_KEY, Authorization:"Bearer "+t, "Content-Type":"application/json"}, body:JSON.stringify(args||{})}); })
+  .then(function(r){ return r.json().catch(function(){ return null; }).then(function(j){ if(!r.ok) throw new Error((j && (j.message || j.hint)) || "error"); return j; }); });
+}
+function setCash(s, n){ var e = document.getElementById("fw-cash"); if(e && n != null) e.textContent = "BUZZ CASH: "+money(n); }
+function dbApply(s, me){ var d = D(s); d.owned = {}; (me.owned||[]).forEach(function(id){ d.owned[id] = true; }); d.look = me.look || {}; d.car = me.active_car || null; if(me.cash != null){ d.cash = me.cash; setCash(s, me.cash); } refreshCarBtn(s); }
+function dbLoad(s){
+  var d = D(s); d.err = null;
+  if(!signedIn()){ d.err = "login"; return Promise.resolve(); }
+  return Promise.all([dbRpc("fw_catalog_list"), dbRpc("fw_me")]).then(function(r){
+    if(!s.alive) return; d.cat = {}; r[0].forEach(function(it){ d.cat[it.id] = it; }); dbApply(s, r[1]); d.ready = true;
+    var props = lookProps(d.look); if(Object.keys(props).length) setLook(s, props);
+  }).catch(function(e){ d.err = String(e && e.message || e); });
+}
+function errMsg(e){
+  var m = String(e && e.message || e);
+  if(/not_enough_cash/.test(m)) return "Not enough BUZZ CASH.";
+  if(/already_owned/.test(m)) return "You already own that.";
+  if(/no_promotion|promoter/.test(m)) return "Start Promoter Mode first to get your BUZZ CASH wallet.";
+  if(/not_signed_in|JWT/.test(m)) return "Log in to buy things.";
+  if(/requirement_missing/.test(m)) return "Build the Basic headquarters first.";
+  if(/no_item/.test(m)) return "That item isn't for sale.";
+  if(/fetch|network|Failed/i.test(m)) return "No connection. Try again.";
+  return "Couldn't complete that. Try again.";
+}
+function newKey(){ try{ return crypto.randomUUID(); }catch(e){ return "k"+Date.now().toString(36)+Math.random().toString(36).slice(2,12); } }
+var SERVER_NO = /not_enough_cash|already_owned|no_promotion|requirement_missing|no_item|bad_/;
+/* one "Buy" button: first tap arms it, second tap pays. getIds() says what is being bought; the server decides the price. */
+function buyFlow(s, b, getIds, onDone){
+  var bt = h("button","fwbtn red"), msg = h("p"), armed = false, busy = false, key = null, keySig = ""; bt.type = "button"; msg.style.color = "#ff7a88"; b.appendChild(bt); b.appendChild(msg);
+  function toBuy(){ var d = D(s); return getIds().filter(function(id){ return d.cat[id] && !d.owned[id]; }); }
+  function sum(l){ return l.reduce(function(t, id){ return t + s.db.cat[id].price; }, 0); }
+  function draw(){ var l = toBuy(); bt.style.display = l.length ? "block" : "none"; bt.disabled = busy; if(l.length) bt.textContent = busy ? "Buying..." : (armed ? "Tap again to confirm: "+money(sum(l)) : "Buy for "+money(sum(l))); }
+  bt.addEventListener("click", function(){
+    var l = toBuy(); if(!l.length || busy) return; msg.textContent = "";
+    if(!armed){ armed = true; draw(); setTimeout(function(){ if(!busy && armed){ armed = false; draw(); } }, 5000); return; }
+    var sig = JSON.stringify(l.slice().sort()); if(sig !== keySig){ key = newKey(); keySig = sig; }   /* same key on a retry = never charged twice */
+    busy = true; draw();
+    dbRpc("fw_buy", {p_items:l, p_key:key}).then(function(me){ dbApply(s, me); key = null; keySig = ""; armed = false; busy = false; draw(); onDone(l); })
+    .catch(function(e){ busy = false; armed = false; msg.textContent = errMsg(e); if(SERVER_NO.test(String(e && e.message || e))){ key = null; keySig = ""; } draw(); });
+  });
+  draw(); return {draw:draw, reset:function(){ armed = false; msg.textContent = ""; draw(); }};
+}
+function needDb(s, title){
+  if(dbReady(s)) return false; var d = D(s); if(d.err !== "login") dbLoad(s);
+  infoPanel(s, title, [d.err === "login" ? "Log in to your Wrestling Buzz account to use this." : "Couldn't reach your Free World account. Close this and try again in a moment."]); return true;
+}
+
+/* ---- Buzz Motors ---- */
+function motorsPanel(s){
+  var d = D(s), i = Math.max(0, CARS.findIndex(function(c){ return c.id === d.car; }));
   panel(s, function(b){
-    b.appendChild(h("h3","","BUZZ FASHION")); var mv = miniView(s, b, 230), list = h("div"), total = h("div","fwprice"); total.style.margin = "10px 0 2px";
-    function preview(){ mv.set(makeHuman(Object.assign({name:userName()}, pick)), 6.4, 2.2, 1.45); var sum = 0; for(var k in sel) sum += sel[k]; total.textContent = "Outfit total: "+money(sum); }
-    var tabs = h("div","fwtabs"); b.appendChild(tabs);
-    function draw(){
-      tabs.innerHTML = ""; Object.keys(SHOP).forEach(function(t){ var bt = h("button","fwbtn"+(t===tab?" on":""),t); bt.type = "button"; bt.addEventListener("click", function(){ tab = t; draw(); }); tabs.appendChild(bt); });
-      list.innerHTML = ""; var cat = SHOP[tab], none = h("button","fwbtn"+(pick[cat.key]===undefined?" on":""),"Default"); none.type = "button"; none.addEventListener("click", function(){ delete pick[cat.key]; delete sel[cat.key]; draw(); preview(); }); list.appendChild(none);
-      cat.items.forEach(function(it){ var bt = h("button","fwbtn fwitem"+(pick[cat.key]===it[2]?" on":"")); bt.type = "button"; bt.appendChild(h("span","",it[0])); bt.appendChild(h("span","",money(it[1])));
-        bt.addEventListener("click", function(){ pick[cat.key] = it[2]; sel[cat.key] = it[1]; draw(); preview(); }); list.appendChild(bt); });
-    }
-    b.appendChild(list); b.appendChild(total); draw(); preview();
-    var wear = h("button","fwbtn red","Wear this in the city"); wear.type = "button"; wear.addEventListener("click", function(){ setLook(s, pick); closePanel(s); showWhere(s, "LOOKING GOOD"); }); b.appendChild(wear);
-    b.appendChild(h("p","","This is a free try-on. Buying and saving outfits to your account opens in the next update, so a new look lasts until you leave Free World.")); closeBtn(s, b, "Leave the shop");
+    b.appendChild(h("h3","","BUZZ MOTORS")); var mv = miniView(s, b, 190);
+    var nm = h("h3"), tp = h("p"), pr = h("div","fwprice"), sp = h("p","fwstat"), hd = h("p","fwstat"), st = h("p"); nm.style.marginTop = "12px"; st.style.color = "#7be39b"; [nm, tp, pr, sp, hd, st].forEach(function(e){ b.appendChild(e); });
+    var row = h("div","fwrow"); [["\u25C0 Previous",-1],["Next \u25B6",1]].forEach(function(o){ var bt = h("button","fwbtn",o[0]); bt.type = "button"; bt.addEventListener("click", function(){ i = (i+o[1]+CARS.length)%CARS.length; show(); }); row.appendChild(bt); }); b.appendChild(row);
+    var use = h("button","fwbtn","Use this car"), umsg = h("p"); use.type = "button"; umsg.style.color = "#ff7a88"; b.appendChild(use); b.appendChild(umsg);
+    use.addEventListener("click", function(){ dbRpc("fw_set_car", {p_car:CARS[i].id}).then(function(me){ dbApply(s, me); show(); }).catch(function(e){ umsg.textContent = errMsg(e); }); });
+    var flow = buyFlow(s, b, function(){ return [CARS[i].id]; }, function(){ show(); });
+    b.appendChild(h("p","", dbReady(s) ? "Cars you buy stay on your account. Driving them around Buzz City opens in a later update." : (d.err === "login" ? "Log in to buy cars." : "Prices are loading. Close and reopen the shop in a moment.")));
+    closeBtn(s, b);
+    function show(){ var c = CARS[i], own = dbReady(s) && d.owned[c.id], pc = price(s, c.id);
+      mv.set(carModel(c), Math.max(8, c.len*1.7), 3.2, 0.9); nm.textContent = c.name+"  ("+(i+1)+"/"+CARS.length+")"; tp.textContent = c.type;
+      pr.textContent = own ? "Owned \u2713" : (pc != null ? money(pc) : "\u2013"); sp.textContent = "Speed     "+stars(c.speed); hd.textContent = "Handling  "+stars(c.handling);
+      use.style.display = own && d.car !== c.id ? "block" : "none"; st.textContent = own && d.car === c.id ? "Your active car" : ""; umsg.textContent = ""; flow.reset(); }
+    show();
   });
 }
 
-/* ---- the other three places ---- */
+/* ---- Buzz Fashion and the Wardrobe (wd = only things you already own) ---- */
+function sameLook(a, b){ var ka = Object.keys(a).sort(), kb = Object.keys(b).sort(); return ka.length === kb.length && ka.every(function(k, i){ return k === kb[i] && a[k] === b[k]; }); }
+function netLook(s){ var n = s.net; if(n && n.live && n.room){ try{ n.room.send("look"); }catch(e){} } }
+function fashionPanel(s, wd){
+  if(wd && needDb(s, "WARDROBE")) return;
+  var d = D(s), pick = Object.assign({}, d.look || {}), tab = "Tops";
+  panel(s, function(b){
+    b.appendChild(h("h3","", wd ? "WARDROBE" : "BUZZ FASHION")); var mv = miniView(s, b, 230), tabs = h("div","fwtabs"), list = h("div"), total = h("div","fwprice"), wmsg = h("p"); total.style.margin = "10px 0 2px"; wmsg.style.color = "#ff7a88";
+    b.appendChild(tabs); b.appendChild(list); b.appendChild(total);
+    var wear = h("button","fwbtn red","Wear this"); wear.type = "button"; b.appendChild(wear); b.appendChild(wmsg);
+    function owned(id){ return dbReady(s) && !!d.owned[id]; }
+    function ids(){ var a = []; for(var k in pick) if(pick[k]) a.push(pick[k]); return a; }
+    function saveLook(){
+      return dbRpc("fw_set_look", {p_look:pick}).then(function(me){ dbApply(s, me); setLook(s, lookProps(d.look)); netLook(s); closePanel(s); showWhere(s, "LOOKING GOOD"); }).catch(function(e){ wmsg.textContent = errMsg(e); });
+    }
+    wear.addEventListener("click", function(){ saveLook(); });
+    var flow = wd ? {reset:function(){}} : buyFlow(s, b, ids, function(){ saveLook(); });
+    function sync(){
+      mv.set(makeHuman(Object.assign({name:userName()}, lookProps(pick))), 6.4, 2.2, 1.45);
+      var u = ids().filter(function(id){ return !owned(id); }), sum = 0, known = true; u.forEach(function(id){ var p = price(s, id); if(p == null) known = false; else sum += p; });
+      total.textContent = wd ? "" : (u.length ? (known ? "To buy: "+money(sum) : "Log in to see prices") : "");
+      wear.style.display = (!u.length && dbReady(s) && !sameLook(pick, d.look)) ? "block" : "none"; wmsg.textContent = ""; flow.reset();
+    }
+    function draw(){
+      tabs.innerHTML = ""; Object.keys(SHOP).forEach(function(t){ var bt = h("button","fwbtn"+(t === tab ? " on" : ""), t); bt.type = "button"; bt.addEventListener("click", function(){ tab = t; draw(); }); tabs.appendChild(bt); });
+      list.innerHTML = ""; var kind = SHOP[tab].kind, none = h("button","fwbtn"+(!pick[kind] ? " on" : ""), "Default"); none.type = "button"; none.addEventListener("click", function(){ delete pick[kind]; draw(); sync(); }); list.appendChild(none);
+      SHOP[tab].items.forEach(function(it){ var own = owned(it[0]); if(wd && !own) return;
+        var bt = h("button","fwbtn fwitem"+(pick[kind] === it[0] ? " on" : "")); bt.type = "button"; bt.appendChild(h("span","",it[1])); var pc = price(s, it[0]); bt.appendChild(h("span","", own ? "Owned \u2713" : (pc != null ? money(pc) : "\u2013")));
+        bt.addEventListener("click", function(){ pick[kind] = it[0]; draw(); sync(); }); list.appendChild(bt); });
+    }
+    b.appendChild(h("p","", wd ? "Pick from the clothes you own." : (dbReady(s) ? "Try anything on for free. What you buy is saved to your account and worn straight away." : (d.err === "login" ? "Log in to buy clothes. You can still try things on." : "Prices are loading. Close and reopen the shop in a moment."))));
+    closeBtn(s, b, wd ? "Close" : "Leave the shop"); draw(); sync();
+  });
+}
+function wardrobePanel(s){ fashionPanel(s, true); }
+
+/* ---- Inventory and Garage ---- */
+function inventoryPanel(s){
+  if(needDb(s, "INVENTORY")) return; var d = D(s), any = false;
+  panel(s, function(b){
+    b.appendChild(h("h3","","INVENTORY")); if(d.cash != null) b.appendChild(h("p","","BUZZ CASH: "+money(d.cash)));
+    [["Cars","car"],["Tops","top"],["Jackets","jacket"],["Trousers","trousers"],["Shoes","shoes"],["Caps","cap"],["Headquarters","hq"]].forEach(function(g){
+      var names = Object.keys(d.owned).filter(function(id){ return ITEMS[id] && ITEMS[id].kind === g[1]; }).map(function(id){ return ITEMS[id].name; }); if(!names.length) return; any = true;
+      var hd = h("p","fwstat",g[0].toUpperCase()); hd.style.marginBottom = "0"; b.appendChild(hd); b.appendChild(h("p","",names.join(", "))); });
+    if(!any) b.appendChild(h("p","","Nothing yet. Visit Buzz Motors and Buzz Fashion to spend your BUZZ CASH.")); closeBtn(s, b);
+  });
+}
+function garagePanel(s){
+  if(needDb(s, "GARAGE")) return; var d = D(s), cars = CARS.filter(function(c){ return d.owned[c.id]; });
+  if(!cars.length) return infoPanel(s, "GARAGE", ["You don't own a car yet. Visit Buzz Motors to buy one."]);
+  var i = Math.max(0, cars.findIndex(function(c){ return c.id === d.car; }));
+  panel(s, function(b){
+    b.appendChild(h("h3","","GARAGE")); var mv = miniView(s, b, 190), nm = h("h3"), st = h("p"), msg = h("p"); nm.style.marginTop = "12px"; st.style.color = "#7be39b"; msg.style.color = "#ff7a88"; b.appendChild(nm); b.appendChild(st);
+    if(cars.length > 1){ var row = h("div","fwrow"); [["\u25C0 Previous",-1],["Next \u25B6",1]].forEach(function(o){ var bt = h("button","fwbtn",o[0]); bt.type = "button"; bt.addEventListener("click", function(){ i = (i+o[1]+cars.length)%cars.length; show(); }); row.appendChild(bt); }); b.appendChild(row); }
+    var use = h("button","fwbtn red","Use this car"); use.type = "button"; b.appendChild(use); b.appendChild(msg);
+    use.addEventListener("click", function(){ dbRpc("fw_set_car", {p_car:cars[i].id}).then(function(me){ dbApply(s, me); show(); }).catch(function(e){ msg.textContent = errMsg(e); }); });
+    b.appendChild(h("p","","Driving around Buzz City opens in a later update.")); closeBtn(s, b);
+    function show(){ var c = cars[i]; mv.set(carModel(c), Math.max(8, c.len*1.7), 3.2, 0.9); nm.textContent = c.name+"  ("+(i+1)+"/"+cars.length+")"; st.textContent = d.car === c.id ? "Your active car" : ""; use.style.display = d.car === c.id ? "none" : "block"; msg.textContent = ""; }
+    show();
+  });
+}
+
+/* ---- My Headquarters (real, saved building upgrades) ---- */
 function hqPanel(s){
-  infoPanel(s, "MY HEADQUARTERS", ["Owner: "+userName(), "Your plot is still empty. Building your headquarters opens in the next update, once BUZZ CASH purchases are switched on.", "Planned upgrades:"],
-    [["Basic headquarters",""],["Upgraded headquarters",""],["Superstar locker room",""],["Training room",""],["Office",""],["Trophy room",""],["Arena expansion",""]]);
+  var d = D(s), sel = null;
+  panel(s, function(b){
+    b.appendChild(h("h3","","MY HEADQUARTERS")); b.appendChild(h("p","","Owner: "+userName()));
+    var prog = h("p","fwstat"), list = h("div"), info = h("p"); b.appendChild(prog); b.appendChild(list); b.appendChild(info);
+    function own(id){ return dbReady(s) && !!d.owned[id]; }
+    function need(id){ var c = d.cat[id], rq = c && c.requires; return rq && !own(rq) ? rq : null; }
+    var flow = buyFlow(s, b, function(){ return sel && !need(sel) ? [sel] : []; }, function(){ draw(); });
+    function draw(){
+      var n = HQ_ITEMS.filter(function(it){ return own(it[0]); }).length; prog.textContent = "Built "+n+" of "+HQ_ITEMS.length+"   "+bar(n, HQ_ITEMS.length);
+      list.innerHTML = ""; HQ_ITEMS.forEach(function(it){ var o = own(it[0]), pc = price(s, it[0]); var bt = h("button","fwbtn fwitem"+(sel === it[0] ? " on" : "")); bt.type = "button"; bt.appendChild(h("span","",it[1])); bt.appendChild(h("span","", o ? "Built \u2713" : (pc != null ? money(pc) : "\u2013")));
+        bt.addEventListener("click", function(){ sel = it[0]; draw(); }); list.appendChild(bt); });
+      var it = HQ_ITEMS.filter(function(x){ return x[0] === sel; })[0];
+      info.textContent = !dbReady(s) ? (d.err === "login" ? "Log in to build your headquarters." : "Prices are loading. Close and reopen in a moment.") : !it ? "Tap an upgrade to see it." : it[2]+(own(sel) ? "  You have built this." : (need(sel) ? "  Build the "+ITEMS[need(sel)].name+" first." : ""));
+      flow.reset();
+    }
+    closeBtn(s, b); draw();
+  });
 }
 function arenaPanel(s){
   infoPanel(s, "BUZZ ARENA", ["The home of live wrestling in Buzz City.", "Promoter: "+userName(), "The doors open for events in a later update. For now you can walk around the outside and see the building."]);
@@ -406,6 +635,8 @@ function trainingPanel(s){
 }
 
 function interact(s){
+  if(s.car && s.car.driving){ exitCar(s); return; }
+  if(carNear(s)){ enterCar(s); return; }
   var sp = C.nearestSpot(s.p.x, s.p.z); if(!sp || !sp.interact) return;
   if(sp.id==="motors") return motorsPanel(s); if(sp.id==="fashion") return fashionPanel(s); if(sp.id==="hq") return hqPanel(s); if(sp.id==="arena") return arenaPanel(s); if(sp.id==="training") return trainingPanel(s);
 }
@@ -415,22 +646,25 @@ function togglePause(s){ if(document.getElementById("fw-panel")){ closePanel(s);
     b.appendChild(h("p","","Graphics quality")); var sel = h("select"); [["auto","Auto (best for this device)"],["low","Low (fastest)"],["medium","Medium"],["high","High (shadows)"]].forEach(function(o){ sel.appendChild(new Option(o[1],o[0])); });
     var cur = null; try{ cur = localStorage.getItem(GFX_KEY); }catch(e){} sel.value = (cur==="low"||cur==="medium"||cur==="high") ? cur : "auto";
     sel.addEventListener("change", function(){ try{ if(sel.value==="auto") localStorage.removeItem(GFX_KEY); else localStorage.setItem(GFX_KEY, sel.value); }catch(e){} restart(); }); b.appendChild(sel);
-    ["Character customisation","Inventory","Garage"].forEach(function(t){ var d = h("button","fwbtn",t+"  (coming soon)"); d.type = "button"; d.disabled = true; b.appendChild(d); });
+    [["Wardrobe",wardrobePanel],["Inventory",inventoryPanel],["Garage",garagePanel]].forEach(function(o){ var d = h("button","fwbtn",o[0]); d.type = "button"; d.addEventListener("click", function(){ o[1](s); }); b.appendChild(d); });
     var ex = h("button","fwbtn","Exit Free World"); ex.type = "button"; ex.addEventListener("click", exit); b.appendChild(ex); });
 }
 function toggleMap(s){ s.mapOn = !s.mapOn; var m = document.getElementById("fw-map"); m.style.display = s.mapOn ? "block" : "none"; if(s.mapOn) drawMap(s); }
 function drawMap(s){
-  var c = document.getElementById("fw-map"), x = c.getContext("2d"), W = C.WORLD, S = c.width/172, ox = c.width/2, oy = c.height/2;
-  x.clearRect(0,0,c.width,c.height); x.fillStyle = "#1f5c34"; x.fillRect(0,0,c.width,c.height); x.fillStyle = "#3a3d45"; x.fillRect(0,oy-6*S,c.width,12*S); x.fillRect(ox-6*S,0,12*S,c.height);
-  x.fillStyle = "#cfc8b8"; x.beginPath(); x.arc(ox,oy,16*S,0,7); x.fill();
-  W.boxes.forEach(function(b){ if(b.id==="bench"||b.id==="car") return; x.fillStyle = "#E01B32"; x.fillRect(ox+b.x0*S, oy+b.z0*S, b.w*S, b.d*S); });
-  x.fillStyle = "#EDBA3E"; W.spots.forEach(function(sp){ if(sp.interact){ x.beginPath(); x.arc(ox+sp.x*S, oy+sp.z*S, 2.2, 0, 7); x.fill(); } });
-  if(s.net){ x.fillStyle = "#7bc4ff"; for(var rid in s.net.remotes){ var rm = s.net.remotes[rid]; x.beginPath(); x.arc(ox+rm.x*S, oy+rm.z*S, 3, 0, 7); x.fill(); } }
+  var c = document.getElementById("fw-map"), x = c.getContext("2d"), W = C.WORLD, SPAN = (W.bounds.maxX-W.bounds.minX), S = c.width/SPAN, ox = c.width/2, oy = c.height/2;
+  x.clearRect(0,0,c.width,c.height); x.fillStyle = "#1f5c34"; x.fillRect(0,0,c.width,c.height); x.fillStyle = "#3a3d45";
+  W.roads.forEach(function(r){ x.fillRect(ox+r.x0*S, oy+r.z0*S, (r.x1-r.x0)*S, (r.z1-r.z0)*S); });
+  x.fillStyle = "#cfc8b8"; x.beginPath(); x.arc(ox,oy,16*S,0,7); x.fill(); x.fillStyle = "#4fc3f7"; x.beginPath(); x.arc(ox,oy,8*S,0,7); x.fill();
+  W.boxes.forEach(function(b){ if(b.id==="bench"||b.id==="car") return; x.fillStyle = b.id==="house" ? "#8a8a95" : "#E01B32"; x.fillRect(ox+b.x0*S, oy+b.z0*S, b.w*S, b.d*S); });
+  x.fillStyle = "#ffffff"; W.parking.forEach(function(b){ x.fillRect(ox+b.x*S-1.5, oy+b.z*S-1.5, 3, 3); });
+  x.fillStyle = "#EDBA3E"; W.spots.forEach(function(sp){ if(sp.interact){ x.beginPath(); x.arc(ox+sp.x*S, oy+sp.z*S, 2.6, 0, 7); x.fill(); } });
+  if(s.net){ x.fillStyle = "#7bc4ff"; for(var rid in s.net.remotes){ var rm = s.net.remotes[rid]; x.beginPath(); x.arc(ox+rm.x*S, oy+rm.z*S, 3, 0, 7); x.fill(); if(rm.cm && !rm.drv){ x.fillRect(ox+rm.cx*S-2, oy+rm.cz*S-2, 4, 4); } } }
+  if(s.car && !s.car.driving){ x.fillStyle = "#EDBA3E"; x.fillRect(ox+s.car.st.x*S-3, oy+s.car.st.z*S-3, 6, 6); }
   x.save(); x.translate(ox+s.p.x*S, oy+s.p.z*S); x.rotate(Math.PI - s.p.rot); x.fillStyle = "#fff"; x.strokeStyle = "#000"; x.beginPath(); x.moveTo(0,-5); x.lineTo(4,4); x.lineTo(-4,4); x.closePath(); x.fill(); x.stroke(); x.restore();
 }
 function buildHud(s){
   var root = s.root, nm = userName();
-  var card = h("div","fwcard"); var av = h("div","fwav",nm.charAt(0).toUpperCase()); card.appendChild(av); var tx = h("div"); tx.appendChild(h("b","",nm)); var bal = h("small","","BUZZ CASH: ..."); tx.appendChild(bal); var nt = h("small","fwnet","OFFLINE (single player)"); nt.id = "fw-net"; tx.appendChild(nt); card.appendChild(tx); root.appendChild(card);
+  var card = h("div","fwcard"); var av = h("div","fwav",nm.charAt(0).toUpperCase()); card.appendChild(av); var tx = h("div"); tx.appendChild(h("b","",nm)); var bal = h("small","","BUZZ CASH: ..."); bal.id = "fw-cash"; tx.appendChild(bal); var nt = h("small","fwnet","OFFLINE (single player)"); nt.id = "fw-net"; tx.appendChild(nt); card.appendChild(tx); root.appendChild(card);
   (function(){ try{ if(!readSession()){ bal.textContent = "BUZZ CASH: log in"; return; } getUserToken().then(function(t){ return fetch(SUPABASE_URL+"/rest/v1/rpc/legends_me",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+t,"Content-Type":"application/json"},body:"{}"}); }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ bal.textContent = (j && j.cash_balance!=null) ? "BUZZ CASH: B "+Number(j.cash_balance).toLocaleString() : "BUZZ CASH: -"; }).catch(function(){ bal.textContent = "BUZZ CASH: -"; }); }catch(e){ bal.textContent = "BUZZ CASH: -"; } })();
   var tr = h("div","fwtr"); function tb(t, f){ var b = h("button","fwbtn",t); b.type = "button"; b.addEventListener("click", f); tr.appendChild(b); return b; }
   tb("\uD83D\uDDFA", function(){ toggleMap(s); }).setAttribute("aria-label","Map");
@@ -448,7 +682,14 @@ function buildHud(s){
   /* right-hand buttons */
   var br = h("div","fwbr"); var wv = h("button","fwbtn","Wave"); wv.type = "button"; wv.addEventListener("click", function(){ doWave(s); }); br.appendChild(wv);
   var rn = h("button","fwbtn","Run"); rn.type = "button"; rn.setAttribute("aria-pressed","false"); rn.addEventListener("click", function(){ s.run = !s.run; rn.classList.toggle("on", s.run); rn.setAttribute("aria-pressed", s.run?"true":"false"); }); br.appendChild(rn);
+  var cb = h("button","fwbtn","Car"); cb.id = "fw-carbtn"; cb.type = "button"; cb.style.display = "none"; cb.addEventListener("click", function(){ carButton(s); }); br.appendChild(cb);
   root.appendChild(br);
+  /* driving controls (shown only while you drive) */
+  var dv = h("div","fwdrive"); s.pedal = {gas:false, brake:false, hb:false};
+  function hold(label, key, cls){ var b = h("button","fwbtn"+(cls ? " "+cls : ""), label); b.type = "button"; var on = function(e){ s.pedal[key] = true; try{ b.setPointerCapture(e.pointerId); }catch(x){} e.preventDefault(); }, off = function(){ s.pedal[key] = false; }; b.addEventListener("pointerdown", on); b.addEventListener("pointerup", off); b.addEventListener("pointercancel", off); b.addEventListener("lostpointercapture", off); dv.appendChild(b); return b; }
+  hold("GAS", "gas", "red"); hold("BRAKE", "brake"); hold("HANDBRAKE", "hb");
+  var ex = h("button","fwbtn","Get out"); ex.type = "button"; ex.addEventListener("click", function(){ exitCar(s); }); dv.appendChild(ex); root.appendChild(dv);
+  var spd = h("div","","0 km/h"); spd.id = "fw-speed"; root.appendChild(spd);
 }
 
 /* ---------- entry points ---------- */
