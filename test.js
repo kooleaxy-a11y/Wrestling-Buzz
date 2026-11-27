@@ -1,8 +1,18 @@
 /* Runs without installing anything: node test.js  (colyseus is stubbed, only our own rules are tested) */
 "use strict";
+process.env.SUPABASE_URL = "https://fake.supabase.test"; process.env.SUPABASE_KEY = "pk_test_key";
 var assert = require("assert"), Module = require("module");
 var origLoad = Module._load;
 Module._load = function(req){ if(req === "colyseus") return {Room: class Room { constructor(){ this.clients = []; this.sent = []; } setPatchRate(){} setSimulationInterval(f){ this.sim = f; } onMessage(t, f){ (this.h = this.h || {})[t] = f; } broadcast(t, m, o){ this.sent.push([t, m, o]); } }}; return origLoad.apply(this, arguments); };
+/* a fake Supabase: token "good-token-..." belongs to user u1 who owns a red top and a gold cap */
+var DBLOOK = {top: "top_red", cap: "cap_gold", evil: "<script>"}, FETCHES = [];
+global.fetch = async function(url, opt){
+  FETCHES.push(url); var auth = (opt.headers.Authorization || ""), ok = /^Bearer good-token-/.test(auth);
+  if(!ok) return {ok: false, status: 401, json: async function(){ return {}; }};
+  if(/auth\/v1\/user/.test(url)) return {ok: true, json: async function(){ return {id: "u1"}; }};
+  if(/rpc\/fw_me/.test(url)) return {ok: true, json: async function(){ return {look: DBLOOK}; }};
+  return {ok: false, status: 404, json: async function(){ return {}; }};
+};
 var C = require("./fw-core.js"), sim = require("./sim.js"), room = require("./room.js");
 
 /* 1. an honest client (60 fps prediction, sends every 66 ms, runs around the plaza) is never rejected */
@@ -46,4 +56,11 @@ R2.onJoin(k1, {name: "Bob"}, {uid: "u1"}); R2.onJoin(k2, {name: "Bob"}, {uid: nu
 var rows = []; R2.players.forEach(function(q){ rows.push(sim.fullRow(q)); });
 assert.deepStrictEqual(rows.map(function(r){ return r[1]; }), ["Bob", "Bob 2", "bob 3"]); assert.deepStrictEqual(rows.map(function(r){ return r[6]; }), [1, 0, 0]);
 R2.onJoin(k4, {name: "Bob"}, {uid: "u1"}); assert.strictEqual(k1.left, 4003, "same account elsewhere is kicked"); assert.strictEqual(k4.left, undefined);
-var auth = require("./auth.js"); assert.strictEqual(auth.enabled(), false); auth.verify("x".repeat(50)).then(function(v){ assert.strictEqual(v, null); console.log("all server tests passed"); });
+var auth = require("./auth.js"); assert.strictEqual(auth.enabled(), true); assert.strictEqual(auth.requireLogin(), true); assert.strictEqual(room.MAX_PLAYERS, 15);
+auth.verify("x".repeat(50)).then(function(v){ assert.strictEqual(v, null); return R2.onAuth(k1, {token: "x".repeat(50)}).then(function(){ throw new Error("guest was let in"); }, function(e){ assert.strictEqual(e.message, "login_required"); }); })
+ .then(function(){ return R2.onAuth(k1, {token: "good-token-" + "y".repeat(30)}); }).then(function(a){ assert.deepStrictEqual(a.outfit, {top: "top_red", cap: "cap_gold"}, "only known outfit slots, no junk"); assert.strictEqual(a.uid, "u1");
+   var R3 = new room.FreeWorldRoom(); R3.onCreate(); var m1 = client("m1"), m2 = client("m2"); R3.clients.push(m1, m2); R3.onJoin(m1, {name: "Me"}, a); R3.onJoin(m2, {name: "You"}, {uid: "u2", token: "good-token-" + "z".repeat(30), outfit: {}});
+   var row = sim.fullRow(R3.players.get("m1")); assert.deepStrictEqual(row[7], {top: "top_red", cap: "cap_gold"}, "others see the saved outfit");
+   DBLOOK = {top: "top_black"}; R3.sent.length = 0; return R3.h.look(m1).then(function(){ var l = R3.sent.filter(function(x){ return x[0] === "look"; })[0]; assert.ok(l && l[1][0] === row[0] && l[1][1].top === "top_black", "look change broadcast"); R3.sent.length = 0; return R3.h.look(m1); }).then(function(){ assert.strictEqual(R3.sent.length, 0, "look changes are rate limited"); });
+ })
+ .then(function(){ process.env.REQUIRE_LOGIN = "0"; return R2.onAuth(k1, {}); }).then(function(a){ assert.strictEqual(a.uid, null); assert.deepStrictEqual(a.outfit, {}); delete process.env.REQUIRE_LOGIN; console.log("all server tests passed"); }).catch(function(e){ console.error(e); process.exit(1); });
