@@ -57,60 +57,6 @@ function carMesh(color){
   return g;
 }
 
-/* ---------- your headquarters: what you build shows on the plot ---------- */
-var hqRoot = null;
-function hqFill(own){
-  var g = hqRoot, basic = own("hq_basic"), up = own("hq_upgraded"), n = HQ_ITEMS.filter(function(it){ return own(it[0]); }).length, lvl = !basic ? 0 : (up ? 2 : 1);
-  box(g,25.6,0.12,17.6,M(0xb9b7ad),42,0.06,26);   /* paved plot */
-  var fm = M(0x8a8a95); [[42,17.2,26,0.4],[42,34.8,26,0.4]].forEach(function(p){ box(g,p[2],1.2,p[3],fm,p[0],0.7,p[1]); }); [[29.2,26,0.4,18],[54.8,26,0.4,18]].forEach(function(p){ box(g,p[2],1.2,p[3],fm,p[0],0.7,p[1]); });
-  if(!basic){   /* empty building site */
-    box(g,16,0.3,10,M(0x77777f),42,0.2,29); box(g,3,1.2,2,M(0x8a5a2b),36,0.75,31); box(g,3,0.9,2,M(0x8a5a2b),48,0.6,31);
-    [[32,19],[52,19],[32,33],[52,33],[38,23],[46,23]].forEach(function(p){ cyl(g,0.1,0.55,1.3,8,M(0xff7a1a),p[0],0.75,p[1]); });
-    sign(g,"MY HQ","READY TO BUILD",12,3,42,4.4,23.6,Math.PI,"#7a5a10");
-    return;
-  }
-  box(g,16,6,10,M(0xe0b43a),42,3,29); box(g,17,0.6,11,M(0x7a5a10),42,6.3,29); box(g,3.6,4.4,0.5,M(0x15151a),42,2.2,23.9);
-  [-1,1].forEach(function(sd){ box(g,4.5,2.6,0.3,MB(0x9fd8ff),42+sd*5.2,3.6,23.9); });
-  if(up){   /* second floor */
-    box(g,13.6,3.4,8.6,M(0xefc95a),42,8.3,29); box(g,15,0.5,10,M(0x7a5a10),42,10.25,29);
-    [-1,0,1].forEach(function(sd){ box(g,2.6,1.5,0.15,MB(0x9fd8ff),42+sd*4.2,8.5,24.65); });
-  }
-  sign(g,"MY HQ","LEVEL "+lvl+"  |  "+n+" OF "+HQ_ITEMS.length+" BUILT",12,3,42,up ? 12.4 : 8.6,23.6,Math.PI,"#7a5a10");
-  if(own("hq_locker")){   /* annex on the west side */
-    box(g,3.4,3.2,5,M(0x5a6a8a),31.9,1.6,29); box(g,3.9,0.3,5.5,M(0x2c3550),31.9,3.35,29); box(g,1.2,2.2,0.2,M(0x15151a),31.9,1.1,26.45);
-    var l1 = label("LOCKER ROOM", 4.2); l1.position.set(31.9,4.6,29); g.add(l1);
-  }
-  if(own("hq_office")){   /* annex on the east side */
-    box(g,3.4,3.2,5,M(0x6a5a3a),52.1,1.6,29); box(g,3.9,0.3,5.5,M(0x3a2f1a),52.1,3.35,29); box(g,1.2,2.2,0.2,M(0x15151a),52.1,1.1,26.45); box(g,2.4,0.9,0.15,MB(0x9fd8ff),52.1,2.4,26.4);
-    var l2 = label("OFFICE", 3.4); l2.position.set(52.1,4.6,29); g.add(l2);
-  }
-  if(own("hq_training")){   /* a wrestling ring in the yard */
-    var rx = 37, rz = 20.4, h2 = 2.3;
-    box(g,5.2,0.6,5.2,M(0x2b2d33),rx,0.37,rz); box(g,4.9,0.1,4.9,M(0xE01B32),rx,0.72,rz);
-    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(function(c){ cyl(g,0.12,0.12,1.8,8,M(0xEDBA3E),rx+c[0]*h2,1.6,rz+c[1]*h2); });
-    [1.1,1.6].forEach(function(y){ [-1,1].forEach(function(sd){ box(g,4.6,0.06,0.06,MB(0xffffff),rx,y+0.7,rz+sd*h2); box(g,0.06,0.06,4.6,MB(0xffffff),rx+sd*h2,y+0.7,rz); }); });
-    var l3 = label("TRAINING ROOM", 4.2); l3.position.set(rx,4,rz); g.add(l3);
-  }
-  if(own("hq_trophy")){   /* trophy statue */
-    box(g,1.6,0.5,1.6,M(0x7a5a10),45,0.35,20.5); cyl(g,0.15,0.25,1,8,M(0xEDBA3E),45,1.1,20.5); cyl(g,0.7,0.35,0.9,12,M(0xEDBA3E),45,2.05,20.5);
-    var tb = new T.Mesh(new T.SphereGeometry(0.25,8,6), MB(0xfff3b0)); tb.position.set(45,2.75,20.5); g.add(tb);
-    var l4 = label("TROPHY ROOM", 3.6); l4.position.set(45,3.7,20.5); g.add(l4);
-  }
-  if(own("hq_arena")){   /* stepped seating */
-    [0,1,2].forEach(function(i){ var ht = 0.5+i*0.5, x = 50.4+i*1.4; box(g,1.4,ht,5,M(0x8a8a95),x,ht/2,20.5); box(g,1.4,0.1,5,M(i%2 ? 0xffffff : 0xE01B32),x,ht+0.05,20.5); });
-    var l5 = label("ARENA EXPANSION", 4.4); l5.position.set(52,3.4,20.5); g.add(l5);
-  }
-}
-/* rebuild the plot when the player's built items change (called whenever the account data is applied) */
-function refreshHq(s){
-  if(!hqRoot || !T) return;
-  var own = function(id){ return !!(s.db && s.db.owned && s.db.owned[id]); };
-  var key = HQ_ITEMS.map(function(it){ return own(it[0]) ? "1" : "0"; }).join(""); if(hqRoot.userData.key === key) return; hqRoot.userData.key = key;
-  hqRoot.children.slice().forEach(function(c){ hqRoot.remove(c); disposeObj(c); });
-  hqFill(own);
-  if(s.renderer && s.renderer.shadowMap.enabled) hqRoot.traverse(function(o){ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
-}
-
 /* ---------- Buzz City ---------- */
 function buildCity(scene){
   var W = C.WORLD, g = new T.Group(); scene.add(g);
@@ -158,8 +104,12 @@ function buildCity(scene){
   building({x:-42,z:-24,w:26,d:18,h:8,face:1,color:0xd9363e,roof:0x7a0b19,accent:0xf2f2f2,sign:"BUZZ MOTORS",sub:"CARS FOR MANAGERS",signBg:"#7a0b19"});
   building({x:42,z:-24,w:26,d:18,h:8,face:1,color:0xeeeef4,roof:0x9a9aa8,accent:0xE01B32,sign:"BUZZ FASHION",sub:"LOOK LIKE A CHAMPION",signBg:"#101014"});
   building({x:-42,z:26,w:26,d:18,h:9,face:-1,color:0x2c2f3a,roof:0x15151a,accent:0xE01B32,sign:"BUZZ TRAINING",sub:"CENTRE",signBg:"#101014"});
-  /* headquarters: your plot. It starts as an empty building site and grows as the player builds things at the HQ door */
-  hqRoot = new T.Group(); g.add(hqRoot); hqFill(function(){ return false; }); hqRoot.userData.key = HQ_ITEMS.map(function(){ return "0"; }).join("");
+  /* headquarters: your plot, fenced, with a starter building and construction cones */
+  var hq = new T.Group(); g.add(hq); box(hq,16,6,10,M(0xe0b43a),42,3,29); box(hq,17,0.6,11,M(0x7a5a10),42,6.3,29); box(hq,3.6,4.4,0.5,M(0x15151a),42,2.2,23.9);
+  [-1,1].forEach(function(s){ box(hq,4.5,2.6,0.3,MB(0x9fd8ff),42+s*5.2,3.6,23.9); });
+  sign(hq,"MY HQ","LEVEL 1  |  YOUR COMPANY",12,3,42,8.6,23.6,Math.PI,"#7a5a10");
+  var fm = M(0x8a8a95); [[42,17.2,26,0.4],[42,34.8,26,0.4]].forEach(function(p){ box(hq,p[2],1.2,p[3],fm,p[0],0.7,p[1]); }); [[29.2,26,0.4,18],[54.8,26,0.4,18]].forEach(function(p){ box(hq,p[2],1.2,p[3],fm,p[0],0.7,p[1]); });
+  [[32,19],[52,19],[32,33],[52,33]].forEach(function(p){ cyl(hq,0.1,0.55,1.3,8,M(0xff7a1a),p[0],0.75,p[1]); });
   /* arena */
   var ar = new T.Group(); g.add(ar); box(ar,44,12,30,M(0x1b1b22),0,6,-66); var dome = cyl(ar,20,22,5,28,M(0x2a2a34),0,14.5,-66); dome.scale.z = 0.72;
   box(ar,40,0.7,0.7,MB(0xE01B32),0,8,-50.6); box(ar,40,0.7,0.7,MB(0xEDBA3E),0,10,-50.6); box(ar,6,6,0.6,M(0x15151a),0,3,-50.7); box(ar,5,0.3,0.7,MB(0xEDBA3E),0,6.2,-50.6);
@@ -218,24 +168,16 @@ function enter(){
   var fail = function(msg){ lm.className = "fwerr"; lm.textContent = msg; var b = h("button","fwbtn red","Back"); b.type = "button"; b.addEventListener("click", exit); load.appendChild(b); };
   prog(10);
   var needs = [];
-  /* "?v=" makes the browser fetch the current files instead of an old cached copy (a stale fw-core.js was breaking Phase 5) */
-  var bust = "?v=" + VERSION, stage = "load";
-  if(!window.THREE) needs.push(loadScript("three.min.js" + bust)); if(!window.FWCore) needs.push(loadScript("fw-core.js" + bust));
-  Promise.all(needs).then(function(){ T = window.THREE; C = window.FWCore; if(!s.alive) return; stage = "start";
-    if(!T || !C) throw new Error("engine files loaded but did not initialise");
-    var W = C.WORLD, missing = []; if(!W || !W.parking) missing.push("WORLD.parking"); ["carSpec","createCar","stepCar","angDiff","nearestSpot","resolve","createState","step"].forEach(function(k){ if(typeof C[k] !== "function") missing.push(k); });
-    if(missing.length) throw new Error("fw-core.js is out of date (missing " + missing.join(", ") + "). Upload the Phase 5 fw-core.js and refresh.");
-    prog(45,"Building Buzz City..."); return new Promise(function(r){ setTimeout(r, 30); }); })
+  if(!window.THREE) needs.push(loadScript("three.min.js")); if(!window.FWCore) needs.push(loadScript("fw-core.js"));
+  Promise.all(needs).then(function(){ T = window.THREE; C = window.FWCore; if(!s.alive) return; prog(45,"Building Buzz City..."); return new Promise(function(r){ setTimeout(r, 30); }); })
   .then(function(){ if(!s.alive) return; start(s, prog, fail); })
-  .catch(function(e){ if(!s.alive) return; try{ console.error("[FreeWorld]", e); }catch(x){}
-    if(stage === "load") fail("Could not load the 3D engine. Check your connection and try again.");
-    else fail("Free World could not start: " + ((e && e.message) || e)); });
+  .catch(function(){ if(s.alive) fail("Could not load the 3D engine. Check your connection and try again."); });
 }
 function exit(){
   if(!A) return; var s = A; A = null; s.alive = false; cancelAnimationFrame(s.raf);
   netClose(s); window.removeEventListener("resize", s.onResize); window.removeEventListener("keydown", s.onKD); window.removeEventListener("keyup", s.onKU);
   try{ if(s.renderer){ s.renderer.dispose(); } }catch(e){} if(s.root.parentNode) s.root.parentNode.removeChild(s.root);
-  if(window.__fw === s) window.__fw = null; hqRoot = null;
+  if(window.__fw === s) window.__fw = null;
   document.body.classList.remove("fwlock"); if(location.hash === "#freeworld") location.hash = "#promoter";
 }
 function restart(){ var hs = location.hash; exit(); location.hash = "#freeworld"; if(hs === "#freeworld") enter(); }
@@ -540,7 +482,7 @@ function dbRpc(name, args){
   .then(function(r){ return r.json().catch(function(){ return null; }).then(function(j){ if(!r.ok) throw new Error((j && (j.message || j.hint)) || "error"); return j; }); });
 }
 function setCash(s, n){ var e = document.getElementById("fw-cash"); if(e && n != null) e.textContent = "BUZZ CASH: "+money(n); }
-function dbApply(s, me){ var d = D(s); d.owned = {}; (me.owned||[]).forEach(function(id){ d.owned[id] = true; }); d.look = me.look || {}; d.car = me.active_car || null; if(me.cash != null){ d.cash = me.cash; setCash(s, me.cash); } refreshCarBtn(s); refreshHq(s); }
+function dbApply(s, me){ var d = D(s); d.owned = {}; (me.owned||[]).forEach(function(id){ d.owned[id] = true; }); d.look = me.look || {}; d.car = me.active_car || null; if(me.cash != null){ d.cash = me.cash; setCash(s, me.cash); } refreshCarBtn(s); }
 function dbLoad(s){
   var d = D(s); d.err = null;
   if(!signedIn()){ d.err = "login"; return Promise.resolve(); }
@@ -670,7 +612,7 @@ function hqPanel(s){
   var d = D(s), sel = null;
   panel(s, function(b){
     b.appendChild(h("h3","","MY HEADQUARTERS")); b.appendChild(h("p","","Owner: "+userName()));
-    var prog = h("p","fwstat"), list = h("div"), info = h("p"); b.appendChild(prog); b.appendChild(list); b.appendChild(info); var hint = h("p","","Everything you build appears on your plot in Buzz City."); hint.style.cssText = "font-size:12px;opacity:.8"; b.appendChild(hint);
+    var prog = h("p","fwstat"), list = h("div"), info = h("p"); b.appendChild(prog); b.appendChild(list); b.appendChild(info);
     function own(id){ return dbReady(s) && !!d.owned[id]; }
     function need(id){ var c = d.cat[id], rq = c && c.requires; return rq && !own(rq) ? rq : null; }
     var flow = buyFlow(s, b, function(){ return sel && !need(sel) ? [sel] : []; }, function(){ draw(); });
@@ -685,112 +627,11 @@ function hqPanel(s){
     closeBtn(s, b); draw();
   });
 }
-/* ---------- Buzz Arena: your Promoter Mode shows, champions and the PPV ---------- */
-function arenaErr(e){
-  var m = String(e && e.message || e);
-  if(/promoter_locked/.test(m)) return "The Arena opens with Promoter Mode on December 21, 2026.";
-  if(/no_promotion/.test(m)) return "Create your promotion in Promoter Mode to start putting on shows.";
-  if(/not_signed_in|JWT/.test(m)) return "Log in to see your shows.";
-  return "Couldn't load your shows. Try again in a moment.";
-}
-function arenaRow(left, right){ var d = h("div","fwitem fwbtn"); d.style.cursor = "default"; d.appendChild(h("span","",left)); d.appendChild(h("span","",right)); return d; }
-function arenaHead(text){ var p = h("p","",text); p.style.cssText = "color:#EDBA3E;font-weight:800;margin:14px 0 4px"; return p; }
-function arenaDay(v){ try{ var d = new Date(v); if(isNaN(d)) return String(v); return d.toLocaleDateString(undefined, {month:"short", day:"numeric"}); }catch(e){ return String(v); } }
 function arenaPanel(s){
-  panel(s, function(b){
-    b.appendChild(h("h3","","BUZZ ARENA"));
-    b.appendChild(h("p","","The home of live wrestling in Buzz City. The shows you book in Promoter Mode are fought here."));
-    var box = h("div"); b.appendChild(box);
-    var msg = h("p","", signedIn() ? "Loading your shows..." : "Log in to see your shows."); box.appendChild(msg);
-    var acts = h("div"); b.appendChild(acts);
-    function bookBtn(){
-      var bk = h("button","fwbtn red","Book a show"); bk.type = "button";
-      bk.addEventListener("click", function(){ exit(); location.hash = "#promoter/book"; });
-      acts.appendChild(bk);
-    }
-    closeBtn(s, acts);
-    if(!signedIn()) return;
-    Promise.all([dbRpc("promoter_booking"), dbRpc("promoter_ppv_info").catch(function(){ return null; })]).then(function(r){
-      if(!s.alive || !b.isConnected) return;
-      var bk = r[0] || {}, ppv = r[1], hist = Array.isArray(bk.history) ? bk.history : [], titles = Array.isArray(bk.titles) ? bk.titles : [];
-      box.textContent = "";
-      if(ppv && ppv.name){
-        if(ppv.open && !ppv.done) box.appendChild(arenaRow("PPV LIVE: "+ppv.name, "Book it now"));
-        else if(ppv.done) box.appendChild(arenaRow("PPV: "+ppv.name, "Done this month"));
-        else if(ppv.opens_on) box.appendChild(arenaRow("Next PPV: "+ppv.name, "Opens "+arenaDay(ppv.opens_on)));
-      }
-      if(titles.length){ box.appendChild(arenaHead("CHAMPIONS")); titles.forEach(function(t){ box.appendChild(arenaRow(t.name, t.champion_name || "Vacant")); }); }
-      if(!hist.length){ box.appendChild(h("p","","No shows yet. Book your first show and the matches appear here.")); }
-      else {
-        var groups = [], seen = {};
-        hist.forEach(function(m){ var k = (m.show_name||"Show")+"|"+(m.week_key||""); if(!seen[k]){ seen[k] = {name:m.show_name||"Show", week:m.week_key||"", list:[]}; groups.push(seen[k]); } seen[k].list.push(m); });
-        groups.slice(0, 3).forEach(function(g){
-          box.appendChild(arenaHead((g.name+(g.week ? "  |  "+g.week : "")).toUpperCase()));
-          g.list.forEach(function(m){
-            box.appendChild(arenaRow(m.a_name+" vs "+m.b_name, m.winner_name+" won  |  "+m.rating+"/100"));
-            if(m.title_name){ var t = h("p","","Title: "+m.title_name); t.style.cssText = "margin:-2px 0 6px;font-size:12px;color:#EDBA3E"; box.appendChild(t); }
-          });
-        });
-      }
-      bookBtn(); acts.insertBefore(acts.lastChild, acts.firstChild);   /* put "Book a show" above "Close" */
-    }).catch(function(e){ if(b.isConnected) msg.textContent = arenaErr(e); });
-  });
+  infoPanel(s, "BUZZ ARENA", ["The home of live wrestling in Buzz City.", "Promoter: "+userName(), "The doors open for events in a later update. For now you can walk around the outside and see the building."]);
 }
-/* ---------- Buzz Training Centre: check your roster's energy and heal injured superstars ---------- */
-var HEAL_FEE = 300;   /* shown to the player; the server decides the real charge */
-function trainErr(e){
-  var m = String(e && e.message || e);
-  if(/promoter_locked/.test(m)) return "The Training Centre opens with Promoter Mode on December 21, 2026.";
-  if(/no_promotion/.test(m)) return "Create your promotion in Promoter Mode first.";
-  if(/not_signed_in|JWT/.test(m)) return "Log in to use the Training Centre.";
-  if(/insufficient_funds|not_enough_cash/.test(m)) return "You don't have enough BUZZ CASH to heal them.";
-  if(/not_injured/.test(m)) return "That superstar isn't injured.";
-  return "Something went wrong. Try again in a moment.";
-}
-function moodText(r){ var t = {injured:"INJURED", exhausted:"EXHAUSTED", tired:"TIRED", fired_up:"FIRED UP", ready:"READY"}[r.mood] || "READY"; if(r.rating_mod) t += " "+(r.rating_mod>0?"+":"")+r.rating_mod; return t; }
 function trainingPanel(s){
-  panel(s, function(b){
-    b.appendChild(h("h3","","BUZZ TRAINING CENTRE"));
-    b.appendChild(h("p","","Where your superstars recover. Every match costs energy and they get back 4 a day. Tired stars lower your show rating, so check your roster here before you book a show."));
-    var status = h("p",""); status.style.cssText = "font-weight:700;min-height:1.2em"; b.appendChild(status);
-    var box = h("div"); b.appendChild(box);
-    var msg = h("p","", signedIn() ? "Loading your roster..." : "Log in to see your superstars."); box.appendChild(msg);
-    var acts = h("div"); b.appendChild(acts); closeBtn(s, acts);
-    if(!signedIn()) return;
-    function note(t, bad){ status.className = bad ? "fwerr" : ""; status.style.color = bad ? "" : "#7be39b"; status.textContent = t; }
-    function reload(){ return dbRpc("promoter_roster").then(function(l){ if(s.alive && b.isConnected) draw(Array.isArray(l) ? l : []); }); }
-    function draw(list){
-      box.textContent = "";
-      if(!list.length){ box.appendChild(h("p","","No superstars signed yet. Sign some in the Promoter Mode marketplace, then come back to look after them.")); return; }
-      var hurt = list.filter(function(r){ return r.injured; }).length, tired = list.filter(function(r){ return !r.injured && r.energy !== undefined && r.energy < 35; }).length;
-      box.appendChild(h("p","", list.length+" signed  |  "+hurt+" injured  |  "+tired+" worn out"));
-      list.slice().sort(function(x, y){ return (y.injured?1:0)-(x.injured?1:0) || (x.energy===undefined?100:x.energy)-(y.energy===undefined?100:y.energy); }).forEach(function(r){
-        var c = h("div","fwitem fwbtn"); c.style.cssText = "cursor:default;display:block;text-align:left";
-        var top = h("div"); top.style.cssText = "display:flex;justify-content:space-between;gap:8px;font-weight:800"; top.appendChild(h("span","",r.name)); top.appendChild(h("span","","OVR "+r.overall)); c.appendChild(top);
-        var low = r.injured ? "INJURED" : moodText(r);
-        var sub = h("div","", low+(r.energy !== undefined ? "  |  Energy "+r.energy+" / 100" : "")); sub.style.cssText = "font-size:13px;color:"+(r.injured?"#ff7a88":"#d8cfbd")+";margin-top:2px"; c.appendChild(sub);
-        if(r.energy !== undefined){
-          var tr = h("div"); tr.style.cssText = "height:6px;border-radius:4px;background:#26202b;margin-top:6px;overflow:hidden";
-          var fi = h("i"); fi.style.cssText = "display:block;height:100%;width:"+Math.max(0,Math.min(100,r.energy))+"%;background:"+(r.energy>=60?"#7be39b":(r.energy>=35?"#EDBA3E":"#E01B32")); tr.appendChild(fi); c.appendChild(tr);
-        }
-        if(r.injured){
-          if(r.injured_until){ var bk = h("div","","Back on "+arenaDay(r.injured_until)+" or heal now"); bk.style.cssText = "font-size:12px;margin-top:4px;color:#d8cfbd"; c.appendChild(bk); }
-          var hb = h("button","fwbtn red","Heal ("+money(HEAL_FEE)+")"); hb.type = "button"; hb.style.marginTop = "8px";
-          hb.addEventListener("click", function(){
-            if(!hb.dataset.sure){ hb.dataset.sure = "1"; hb.textContent = "Tap again to pay "+money(HEAL_FEE); setTimeout(function(){ if(hb.isConnected && hb.dataset.sure && !hb.disabled){ delete hb.dataset.sure; hb.textContent = "Heal ("+money(HEAL_FEE)+")"; } }, 4000); return; }
-            hb.disabled = true; hb.textContent = "Healing...";
-            dbRpc("promoter_heal", {p_superstar:r.superstar_id}).then(function(res){
-              var bal = res && res.wallet && res.wallet.balance; if(bal != null) setCash(s, bal);
-              return reload().then(function(){ if(b.isConnected) note(r.name+" is healed and ready to wrestle."); });
-            }).catch(function(e){ if(!b.isConnected) return; hb.disabled = false; delete hb.dataset.sure; hb.textContent = "Heal ("+money(HEAL_FEE)+")"; note(trainErr(e), true); });
-          });
-          c.appendChild(hb);
-        }
-        box.appendChild(c);
-      });
-    }
-    reload().catch(function(e){ if(b.isConnected) msg.textContent = trainErr(e); });
-  });
+  infoPanel(s, "BUZZ TRAINING CENTRE", ["Where future superstars will be developed and where managers will take on challenges.", "Training sessions and manager challenges open in a later update."]);
 }
 
 function interact(s){
