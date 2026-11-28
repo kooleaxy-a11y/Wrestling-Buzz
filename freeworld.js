@@ -238,7 +238,7 @@ function start(s, prog, fail){
   buildHud(s); netStart(s); dbLoad(s); prog(100);
   var ld = document.getElementById("fw-load"); setTimeout(function(){ if(ld && ld.parentNode) ld.parentNode.removeChild(ld); showWhere(s, "WELCOME TO BUZZ CITY"); }, 250);
   s.onResize = function(){ renderer.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth/innerHeight; cam.updateProjectionMatrix(); }; window.addEventListener("resize", s.onResize);
-  s.onKD = function(e){ var k = e.key.toLowerCase(); if(["arrowup","arrowdown","arrowleft","arrowright"," "].indexOf(k)>=0) e.preventDefault(); s.keys[k] = true; if(e.repeat) return;
+  s.onKD = function(e){ var k = e.key.toLowerCase(); if(["arrowup","arrowdown","arrowleft","arrowright"," "].indexOf(k)>=0) e.preventDefault(); s.keys[k] = true; if(e.repeat) return; if(s.watch){ if(k === "escape") endWatch(s); return; }
     if(k==="e") interact(s); else if(k==="f") doWave(s); else if(k==="m") toggleMap(s); else if(k==="escape") togglePause(s); };
   s.onKU = function(e){ s.keys[e.key.toLowerCase()] = false; }; window.addEventListener("keydown", s.onKD); window.addEventListener("keyup", s.onKU);
   /* camera drag (finger on the right side or mouse) and wheel zoom */
@@ -683,7 +683,7 @@ var GEAR = [[0xE01B32,0xf2f2f2],[0x2f6fdb,0xEDBA3E],[0x15151a,0xE01B32],[0x27ae6
 var FINISHERS = ["Thunder Bomb","Buzz Driver","Crown Slam","Final Rumble","Iron Clutch","Skyfall","Golden Spear","Title Shot"];
 /* the same name always gives the same look and fighting style */
 function wrestlerLook(name){ var hh = hash32(name), g = GEAR[hh % GEAR.length];
-  return {name:name, skin:SKINS6[(hh>>3) % SKINS6.length], hair:HAIRS6[(hh>>6) % HAIRS6.length], trunks:g[0], trim:g[1], boots:((hh>>9) % 2) ? 0x15151a : g[1], tights:((hh>>11) % 3) === 0, finisher:FINISHERS[(hh>>15) % FINISHERS.length], style:(hh>>18) % 3}; }
+  return {name:name, skin:SKINS6[(hh>>>3) % SKINS6.length], hair:HAIRS6[(hh>>>6) % HAIRS6.length], trunks:g[0], trim:g[1], boots:((hh>>>9) % 2) ? 0x15151a : g[1], tights:((hh>>>11) % 3) === 0, finisher:FINISHERS[(hh>>>15) % FINISHERS.length], style:(hh>>>18) % 3}; }
 
 /* ---- a wrestler you can pose: torso, head, two arms, two legs ---- */
 var STAND = {rx:0, rz:0, y:0, tor:0, torz:0, hx:0, aLx:-0.45, aLz:0.14, aRx:-0.45, aRz:-0.14, lLx:0, lLz:0.06, lRx:0, lRz:-0.06};
@@ -795,7 +795,7 @@ function scriptMatch(m){
   var winner = info.winner === info.a ? A : B, loser = winner === A ? B : A, rating = Math.max(1, Math.min(99, info.rating|0 || 60));
   function E(t, f){ ev.push({t:t, f:f}); }
   function P_(w){ return pos[w.id]; }
-  function cl(v){ return Math.max(-2.9, Math.min(2.9, v)); }
+  function cl(v){ return Math.max(-2.5, Math.min(2.5, v)); }
   function pose(t, w, p, r){ var pp = pz(p); E(t, function(){ w.set(pp, r); }); }
   function goFree(t, w, x, z, d){ pos[w.id] = {x:x, z:z}; E(t, function(now){ w.go(x, z, d, now); }); }
   function go(t, w, x, z, d){ goFree(t, w, cl(x), cl(z), d); }
@@ -884,16 +884,17 @@ function scriptMatch(m){
     var d; if(name === "strike") d = strike(t, a, v); else if(name === "chop") d = chop(t, a, v); else if(name === "clothesline") d = clothesline(t, a, v, keep); else if(name === "slam") d = slam(t, a, v, keep, false); else if(name === "dropkick") d = dropkick(t, a, v, keep); else d = whipLine(t, a, v);
     t += d; return d; }
   var KO = {clothesline:1, slam:1, dropkick:1};
+  function koPick(w){ var pool = w.style === 1 ? ["slam","clothesline"] : w.style === 2 ? ["dropkick","clothesline"] : ["clothesline","clothesline"]; return pool[Math.floor(rng()*pool.length)]; }
   function offence(a, v, nearFall){
-    var name = pick(a), knock = !!KO[name] || name === "whip"; if(name === "whip"){ doMove(name, a, v, false); return; }
+    var name = nearFall ? koPick(a) : pick(a); if(name === "whip"){ doMove(name, a, v, false); return; }
     if(nearFall && KO[name]){ doMove(name, a, v, true); t += pin(t, a, v, 2); }
     else doMove(name, a, v, false); }
   t += lockup(t, loser, winner);                                         /* the other side takes the early lead */
-  var n1 = 2 + (rating > 55 ? 1 : 0); for(var i = 0; i < n1; i++) offence(loser, winner, i === n1 - 1 && rating >= 35);
+  var n1 = 3 + (rating > 55 ? 1 : 0); for(var i = 0; i < n1; i++) offence(loser, winner, i === n1 - 1 && rating >= 35);
   E(t, function(){ m.ui.cap("The crowd is rallying behind " + winner.name + "!"); m.fx("cheer"); m.shot("crowd"); }); pose(t, winner, {aLx:-2.6, aRx:-2.6, aLz:0.45, aRz:-0.45}, 8); t += 1.4;   /* the comeback */
   var pv0 = P_(winner); pose(t, winner, GUARD, 8);
   doMove("strike", winner, loser); doMove(winner.style === 2 ? "dropkick" : "strike", winner, loser); offence(winner, loser, rating >= 55);
-  var n3 = Math.max(0, Math.floor((rating - 45)/14)); for(var j = 0; j < n3; j++){ var atk = rng() < 0.5 ? loser : winner, vic = atk === winner ? loser : winner; offence(atk, vic, rating >= 70 && j === n3 - 1); }
+  var n3 = Math.max(0, Math.floor((rating - 30)/11)); for(var j = 0; j < n3; j++){ var atk = rng() < 0.5 ? loser : winner, vic = atk === winner ? loser : winner; offence(atk, vic, rating >= 70 && j === n3 - 1); }
   if(rating >= 80){ E(t, function(){ m.ui.cap("This is a classic! Both of them have given everything!"); m.fx("cheer"); }); t += 1.4; }
   /* the finish */
   E(t, function(){ m.ui.cap(winner.name + " is setting up for the " + winner.finisher + "!"); m.fx("gasp"); m.shot("close"); });
