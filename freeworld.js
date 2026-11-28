@@ -15,7 +15,7 @@ function serverUrl(){ var v = window.FW_SERVER || ""; try{ v = v || localStorage
 /* ---------- styles ---------- */
 var css = "body.fwlock{overflow:hidden}#fw-root{position:fixed;inset:0;height:100dvh;z-index:8500;background:#0b0b0d;color:#fff;font-family:inherit;touch-action:none;user-select:none;-webkit-user-select:none}#fw-root>canvas.fwgl{display:block;width:100%;height:100%}"+
 ".fwhud *{box-sizing:border-box}.fwcard{position:absolute;left:10px;top:calc(10px + env(safe-area-inset-top,0px));display:flex;gap:8px;align-items:center;background:rgba(10,10,14,.72);border:1px solid #E01B32;border-radius:14px;padding:7px 10px;backdrop-filter:blur(4px)}"+
-".fwav{flex:none;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#E01B32,#7a0b19);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px}.fwcard b{display:block;font-size:14px;max-width:118px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fwcard small{display:block;color:#EDBA3E;font-weight:700;font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"+
+".fwav{flex:none;width:54px;height:54px;border-radius:50%;overflow:hidden;border:2px solid #EDBA3E;background:linear-gradient(135deg,#E01B32,#7a0b19);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px}.fwcard b{display:block;font-size:14px;max-width:118px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fwcard small{display:block;color:#EDBA3E;font-weight:700;font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"+
 ".fwtr{position:absolute;right:10px;top:calc(10px + env(safe-area-inset-top,0px));display:flex;gap:6px}.fwtr .fwbtn{padding:9px 0;width:44px;font-size:18px;text-align:center}.fwbtn{border:1px solid #4a4a55;background:rgba(10,10,14,.72);color:#fff;border-radius:12px;padding:10px 13px;font:inherit;font-weight:700;cursor:pointer;touch-action:manipulation}.fwbtn.red{background:#E01B32;border-color:#E01B32}.fwbtn[disabled]{opacity:.45;cursor:default}"+
 "#fw-joy{position:absolute;left:18px;bottom:calc(26px + env(safe-area-inset-bottom,0px));width:132px;height:132px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.28);touch-action:none}#fw-knob{position:absolute;left:41px;top:41px;width:50px;height:50px;border-radius:50%;background:rgba(224,27,50,.85);border:2px solid #fff;pointer-events:none}"+
 ".fwbr{position:absolute;right:14px;bottom:calc(26px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;align-items:flex-end}.fwbr .fwbtn{min-width:96px;min-height:46px;font-size:15px}.fwbtn.on{background:#EDBA3E;color:#241600;border-color:#EDBA3E}"+
@@ -132,18 +132,54 @@ function buildCity(scene){
   return g;
 }
 
+/* ---------- faces ---------- */
+function cssHex(c){ return "#"+("000000"+Number(c).toString(16)).slice(-6); }
+function drawFace(x, n, skin, hair){
+  var k = n/128, sk = cssHex(skin), hr = cssHex(hair);
+  function el(cx, cy, rx, ry){ x.beginPath(); x.ellipse(cx*k, cy*k, rx*k, ry*k, 0, 0, 6.2832); x.fill(); }
+  x.fillStyle = sk; x.fillRect(0, 0, n, n);
+  x.fillStyle = "rgba(0,0,0,0.10)"; x.fillRect(0, 0, n, 12*k);                       /* shadow under the fringe */
+  x.fillStyle = "rgba(255,80,80,0.20)"; el(24, 88, 13, 8); el(104, 88, 13, 8);       /* cheeks */
+  [32, 96].forEach(function(ex){
+    x.fillStyle = "#ffffff"; el(ex, 60, 16, 12);                                      /* eye white */
+    x.fillStyle = "#3a2412"; el(ex, 61, 8.5, 9); x.fillStyle = "#050505"; el(ex, 61, 4.6, 5); x.fillStyle = "#ffffff"; el(ex-3, 57, 2.4, 2.4);   /* iris, pupil, shine */
+    x.strokeStyle = "rgba(20,10,10,0.85)"; x.lineWidth = 3*k; x.lineCap = "round"; x.beginPath(); x.moveTo((ex-16)*k, 58*k); x.quadraticCurveTo(ex*k, 44*k, (ex+16)*k, 58*k); x.stroke();   /* upper lid */
+    x.strokeStyle = hr; x.lineWidth = 7*k; x.beginPath(); x.moveTo((ex-15)*k, (ex < 64 ? 36 : 41)*k); x.lineTo((ex+15)*k, (ex < 64 ? 41 : 36)*k); x.stroke();                                  /* eyebrow */
+  });
+  x.fillStyle = "rgba(0,0,0,0.17)"; x.beginPath(); x.moveTo(64*k, 62*k); x.lineTo(54*k, 86*k); x.quadraticCurveTo(64*k, 92*k, 74*k, 86*k); x.closePath(); x.fill();   /* nose */
+  x.fillStyle = "rgba(0,0,0,0.30)"; el(59, 88, 2.6, 2); el(69, 88, 2.6, 2);
+  x.fillStyle = "#ffffff"; x.beginPath(); x.moveTo(40*k, 100*k); x.quadraticCurveTo(64*k, 128*k, 88*k, 100*k); x.closePath(); x.fill();                                              /* smile with teeth */
+  x.strokeStyle = "#7a2630"; x.lineWidth = 4.5*k; x.lineCap = "round"; x.beginPath(); x.moveTo(40*k, 100*k); x.quadraticCurveTo(64*k, 128*k, 88*k, 100*k); x.quadraticCurveTo(64*k, 106*k, 40*k, 100*k); x.stroke();
+}
+var faceCache = {};
+function faceCanvas(skin, hair){ var key = skin+"_"+hair; if(!faceCache[key]){ var cv = document.createElement("canvas"); cv.width = cv.height = 256; drawFace(cv.getContext("2d"), 256, skin, hair); faceCache[key] = {cv:cv, mat:null}; } return faceCache[key]; }
+function faceMat(skin, hair){ var f = faceCanvas(skin, hair); if(!f.mat){ var tex = new T.CanvasTexture(f.cv); tex.anisotropy = 4; f.mat = new T.MeshLambertMaterial({map:tex}); } return f.mat; }
+/* the round face picture in the top-left box */
+function drawPortrait(cv, o){
+  o = o || {}; var x = cv.getContext("2d"), skin = o.skin||0xe0ac82, hair = o.hair||0x1a1410, top = o.jacket||o.shirt||0xE01B32;
+  x.fillStyle = "#23232d"; x.fillRect(0, 0, 96, 96);
+  x.fillStyle = cssHex(top); x.beginPath(); x.moveTo(6, 100); x.quadraticCurveTo(10, 66, 34, 64); x.lineTo(62, 64); x.quadraticCurveTo(86, 66, 90, 100); x.closePath(); x.fill();
+  x.fillStyle = cssHex(skin); x.fillRect(40, 56, 16, 14); x.fillRect(20, 34, 5, 11); x.fillRect(71, 34, 5, 11);
+  x.drawImage(faceCanvas(skin, hair).cv, 24, 14, 48, 50);
+  x.fillStyle = cssHex(hair); x.fillRect(22, 6, 52, 12); x.fillRect(22, 12, 5, 26); x.fillRect(69, 12, 5, 26); x.fillRect(26, 14, 44, 4);
+  if(o.cap){ x.fillStyle = cssHex(o.cap); x.fillRect(20, 2, 56, 15); x.fillRect(24, 14, 48, 5); x.fillStyle = "rgba(0,0,0,0.25)"; x.fillRect(24, 18, 48, 2); }
+}
 /* ---------- the manager character (low-poly, animated) ---------- */
 function makeHuman(o){
   o = o || {}; var g = new T.Group(), skin = o.skin||0xe0ac82, shirt = o.shirt||0xE01B32, pants = o.pants||0x22232b, shoes = o.shoes||0xf2f2f2, hair = o.hair||0x1a1410;
   var body = new T.Group(); g.add(body);
-  box(body,0.72,0.95,0.4,M(shirt),0,1.4,0); var head = box(body,0.5,0.5,0.5,M(skin),0,2.18,0); box(body,0.54,0.2,0.54,M(hair),0,2.46,-0.02); box(body,0.5,0.1,0.1,M(0x111111),0,2.2,0.25);
+  box(body,0.72,0.95,0.4,M(shirt),0,1.4,0);
+  var sm = M(skin), head = new T.Mesh(new T.BoxGeometry(0.6,0.6,0.58), [sm, sm, sm, sm, faceMat(skin, hair), sm]); head.position.set(0,2.24,0); body.add(head);
+  box(body,0.2,0.16,0.2,sm,0,1.93,0);
+  box(body,0.66,0.2,0.64,M(hair),0,2.62,-0.02); box(body,0.66,0.48,0.14,M(hair),0,2.4,-0.28); box(body,0.07,0.24,0.5,M(hair),-0.325,2.46,-0.02); box(body,0.07,0.24,0.5,M(hair),0.325,2.46,-0.02); box(body,0.54,0.09,0.06,M(hair),0,2.57,0.3);
+  [-1,1].forEach(function(sd){ box(body,0.06,0.16,0.1,sm,sd*0.33,2.2,0); });
   if(o.jacket) box(body,0.8,0.8,0.46,M(o.jacket),0,1.42,0);
-  if(o.cap){ box(body,0.58,0.14,0.58,M(o.cap),0,2.58,-0.02); box(body,0.5,0.05,0.3,M(o.cap),0,2.53,0.34); }
+  if(o.cap){ box(body,0.7,0.16,0.68,M(o.cap),0,2.75,-0.02); box(body,0.58,0.05,0.36,M(o.cap),0,2.68,0.42); }
   function limb(x, y, w, hh, mat, endMat){ var piv = new T.Group(); piv.position.set(x,y,0); body.add(piv); var m = box(piv,w,hh,w+0.04,mat,0,-hh/2,0); if(endMat) box(piv,w+0.02,0.22,w+0.2,endMat,0,-hh+0.08,0.05); return piv; }
   var aL = limb(-0.5,1.82,0.22,0.85,M(o.jacket||shirt)), aR = limb(0.5,1.82,0.22,0.85,M(o.jacket||shirt));
   [aL,aR].forEach(function(a){ box(a,0.2,0.2,0.22,M(skin),0,-0.9,0); });
   var lL = limb(-0.18,0.95,0.3,0.95,M(pants),M(shoes)), lR = limb(0.18,0.95,0.3,0.95,M(pants),M(shoes));
-  var lbl = label(o.name||"Manager", 3.0); lbl.position.set(0,3.15,0); g.add(lbl);
+  var lbl = label(o.name||"Manager", 3.0); lbl.position.set(0,3.4,0); g.add(lbl);
   var t = 0, wave = 0;
   g.userData.update = function(dt, speed, running){
     var moving = speed > 0.4; t += dt*(moving ? (running?13:8.5) : 2); var amp = moving ? (running?0.95:0.6) : 0;
@@ -223,7 +259,8 @@ function frame(s, now){
   s.me.visible = !drv; s.me.position.set(P.x, 0.15, P.z); s.me.rotation.y = P.rot; s.me.userData.update(dt, s.paused||drv?0:P.speed, P.running);
   updateRemotes(s, dt); netSend(s, now);
   /* follow camera (swings in behind the car when driving) */
-  var tx = P.x, ty = drv ? 1.7 : 2.1, tz = P.z;
+  if(s.faceCam && !drv){ if(P.speed > 0.8 || s.paused) faceCam(s, false); else if(!s.drag) s.yaw += C.angDiff(s.yaw, P.rot) * (1 - Math.exp(-dt*5)); }
+  var tx = P.x, ty = drv ? 1.7 : (s.faceCam ? 2.35 : 2.2), tz = P.z;
   if(drv){ var cst = s.car.st, sp2 = Math.abs(cst.speed); if(!s.drag && sp2 > 1){ s.yaw += C.angDiff(s.yaw, cst.rot + Math.PI) * (1 - Math.exp(-dt*2.6)); } s.dist = 9 + Math.min(4, sp2*0.12); tx += Math.sin(cst.rot)*2.5; tz += Math.cos(cst.rot)*2.5;
     var fov = 58 + Math.min(1, sp2/s.car.spec.max)*12; if(Math.abs(s.cam.fov - fov) > 0.15){ s.cam.fov += (fov - s.cam.fov)*Math.min(1, dt*4); s.cam.updateProjectionMatrix(); } }
   var cp = Math.cos(s.pitch), want = new T.Vector3(tx + Math.sin(s.yaw)*cp*s.dist, ty + Math.sin(s.pitch)*s.dist, tz + Math.cos(s.yaw)*cp*s.dist);
@@ -263,8 +300,12 @@ function carButton(s){
   if(netCar(s, {op:"spawn", bay:bi})){ showWhere(s, "CALLING YOUR CAR..."); return; }
   makeOwnCar(s, d.car, b.x, b.z, b.rot); showWhere(s, "YOUR CAR IS AT "+b.name.toUpperCase());
 }
+function faceCam(s, on){
+  if(on === !!s.faceCam) return; s.faceCam = on;
+  if(on){ s.faceSave = {dist:s.dist, pitch:s.pitch}; s.dist = 4.4; s.pitch = 0.1; } else if(s.faceSave){ s.dist = s.faceSave.dist; s.pitch = s.faceSave.pitch; s.faceSave = null; }
+}
 function enterCar(s){
-  var c = s.car; if(!c || c.driving) return; c.driving = true; var P = s.p; P.x = c.st.x; P.z = c.st.z; P.rot = c.st.rot; P.vx = 0; P.vz = 0; P.speed = 0; P.running = false;
+  var c = s.car; if(!c || c.driving) return; faceCam(s, false); c.driving = true; var P = s.p; P.x = c.st.x; P.z = c.st.z; P.rot = c.st.rot; P.vx = 0; P.vz = 0; P.speed = 0; P.running = false;
   netCar(s, {op:"in"}); s.walkDist = s.dist; s.dist = 9.5; s.pitch = 0.3; s.root.classList.add("fwdriving"); showWhere(s, "DRIVING: "+(carDefOf(c.id) || {name:""}).name.toUpperCase());
 }
 function exitCar(s){
@@ -302,7 +343,7 @@ function ensureColyseus(){
 function netStatus(cls, text){ var e = document.getElementById("fw-net"); if(!e) return; e.className = "fwnet "+cls; e.textContent = text; }
 function remoteCount(s){ var c = 0; if(s.net) for(var k in s.net.remotes) c++; return c; }
 function refreshNet(s){ if(s.net && s.net.live) netStatus("on", "ONLINE: "+(remoteCount(s)+1)+" in city"); }
-function disposeObj(o){ o.traverse(function(c){ if(c.geometry) c.geometry.dispose(); if(c.material && c.material.map){ c.material.map.dispose(); c.material.dispose(); } }); }
+function disposeObj(o){ o.traverse(function(c){ if(c.geometry) c.geometry.dispose(); var m = c.material; if(m && !Array.isArray(m) && m.map && m.map.dispose){ m.map.dispose(); m.dispose(); } }); }
 function remoteMesh(p){
   var id = p[0], look = p[2]|0, o = {name:p[1]+(p[6] ? " \u2713" : ""), shirt:LOOK_SHIRTS[look%LOOK_SHIRTS.length], skin:LOOK_SKINS[(look+id)%LOOK_SKINS.length], hair:LOOK_HAIR[(look*3+id)%LOOK_HAIR.length]};
   if(p[7]) Object.assign(o, lookProps(p[7]));   /* their saved outfit, as checked by the server */
@@ -469,7 +510,7 @@ function setLook(s, look){
   var old = s.me, pos = old.position.clone(), rot = old.rotation.y; s.scene.remove(old); disposeObj(old);
   var m = makeHuman(Object.assign({name:userName()}, look)); m.position.copy(pos); m.rotation.y = rot; s.scene.add(m);
   if(s.renderer.shadowMap.enabled) m.traverse(function(o){ if(o.isMesh) o.castShadow = true; });
-  s.me = m; s.look = look;
+  s.me = m; s.look = look; var pc = document.getElementById("fw-avatar"); if(pc) drawPortrait(pc, look);
 }
 
 /* ---- your Free World account on the server (prices, ownership, saved look) ---- */
@@ -664,7 +705,7 @@ function drawMap(s){
 }
 function buildHud(s){
   var root = s.root, nm = userName();
-  var card = h("div","fwcard"); var av = h("div","fwav",nm.charAt(0).toUpperCase()); card.appendChild(av); var tx = h("div"); tx.appendChild(h("b","",nm)); var bal = h("small","","BUZZ CASH: ..."); bal.id = "fw-cash"; tx.appendChild(bal); var nt = h("small","fwnet","OFFLINE (single player)"); nt.id = "fw-net"; tx.appendChild(nt); card.appendChild(tx); root.appendChild(card);
+  var card = h("div","fwcard"); var av = h("div","fwav"), avc = h("canvas"); avc.id = "fw-avatar"; avc.width = 96; avc.height = 96; avc.style.cssText = "width:100%;height:100%;display:block"; av.appendChild(avc); card.appendChild(av); drawPortrait(avc, s.look || {}); var tx = h("div"); tx.appendChild(h("b","",nm)); var bal = h("small","","BUZZ CASH: ..."); bal.id = "fw-cash"; tx.appendChild(bal); var nt = h("small","fwnet","OFFLINE (single player)"); nt.id = "fw-net"; tx.appendChild(nt); card.appendChild(tx); root.appendChild(card);
   (function(){ try{ if(!readSession()){ bal.textContent = "BUZZ CASH: log in"; return; } getUserToken().then(function(t){ return fetch(SUPABASE_URL+"/rest/v1/rpc/legends_me",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+t,"Content-Type":"application/json"},body:"{}"}); }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ bal.textContent = (j && j.cash_balance!=null) ? "BUZZ CASH: B "+Number(j.cash_balance).toLocaleString() : "BUZZ CASH: -"; }).catch(function(){ bal.textContent = "BUZZ CASH: -"; }); }catch(e){ bal.textContent = "BUZZ CASH: -"; } })();
   var tr = h("div","fwtr"); function tb(t, f){ var b = h("button","fwbtn",t); b.type = "button"; b.addEventListener("click", f); tr.appendChild(b); return b; }
   tb("\uD83D\uDDFA", function(){ toggleMap(s); }).setAttribute("aria-label","Map");
@@ -682,6 +723,7 @@ function buildHud(s){
   /* right-hand buttons */
   var br = h("div","fwbr"); var wv = h("button","fwbtn","Wave"); wv.type = "button"; wv.addEventListener("click", function(){ doWave(s); }); br.appendChild(wv);
   var rn = h("button","fwbtn","Run"); rn.type = "button"; rn.setAttribute("aria-pressed","false"); rn.addEventListener("click", function(){ s.run = !s.run; rn.classList.toggle("on", s.run); rn.setAttribute("aria-pressed", s.run?"true":"false"); }); br.appendChild(rn);
+  var fb = h("button","fwbtn","Face"); fb.type = "button"; fb.addEventListener("click", function(){ faceCam(s, !s.faceCam); }); br.appendChild(fb);
   var cb = h("button","fwbtn","Car"); cb.id = "fw-carbtn"; cb.type = "button"; cb.style.display = "none"; cb.addEventListener("click", function(){ carButton(s); }); br.appendChild(cb);
   root.appendChild(br);
   /* driving controls (shown only while you drive) */
